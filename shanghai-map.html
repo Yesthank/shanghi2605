@@ -159,6 +159,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   width: calc(100% - 32px);
   max-height: 78vh;
   overflow-y: auto;
+  overscroll-behavior: contain;  /* 카드 본문 스크롤이 Leaflet pan 으로 전파되지 않게 */
   transform: translateX(-50%) translateY(0);
   transition: transform .38s cubic-bezier(.2,.85,.2,1), opacity .25s ease;
   opacity: 1;
@@ -634,6 +635,13 @@ cardEl.addEventListener('click', e => {
 function focusStop(slug) {
   const stop = STOPS.find(s => s.slug === slug);
   if (!stop) return;
+
+  // Critical: kill any in-flight drag from a previous interaction
+  if (dragState) {
+    dragState = null;
+    cardEl.classList.remove('dragging');
+    cardEl.style.transform = '';
+  }
 
   cardEl.classList.add('hide');
   setMinimized(false);  // always expand when new stop focused
