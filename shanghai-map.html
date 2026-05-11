@@ -147,88 +147,103 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 .suvin-list li .name { font-weight: 600; }
 .suvin-list li .hint { font-size: 10px; opacity: 0.55; margin-left: 4px; }
 
-/* Stop info card — max-height collapse drawer (mobile-safe) */
+/* Stop info card — bottom sheet with drag handle (mobile-first) */
 .stop-card {
   position: fixed;
   bottom: 20px;
   left: 50%;
   z-index: 1000;
-  padding: 16px 22px 20px;
+  padding: 6px 22px 20px;
   min-width: 320px;
   max-width: 480px;
   width: calc(100% - 32px);
-  max-height: 65vh;
+  max-height: 78vh;
   overflow-y: auto;
-  transform: translateX(-50%);
-  transition: max-height .38s cubic-bezier(.2,.85,.2,1),
-              padding .25s ease,
-              opacity .25s ease,
-              bottom .35s ease;
+  transform: translateX(-50%) translateY(0);
+  transition: transform .38s cubic-bezier(.2,.85,.2,1), opacity .25s ease;
   opacity: 1;
+  -webkit-tap-highlight-color: transparent;
 }
 .stop-card.hide {
   opacity: 0;
-  bottom: -40px;
+  transform: translateX(-50%) translateY(60px);
   pointer-events: none;
 }
-/* Minimized = collapse height to header-only (54px) */
+/* Minimized = slide down so only header peek visible.
+   calc(100% - 64px) keeps top 64px (handle + name row) visible. */
 .stop-card.minimized {
-  max-height: 54px;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  transform: translateX(-50%) translateY(calc(100% - 64px));
   overflow: hidden;
-  cursor: pointer;
 }
-.stop-card.minimized .drag-handle { display: none; }
+/* During drag = JS sets inline transform, kill transition for smoothness */
+.stop-card.dragging {
+  transition: none !important;
+  cursor: grabbing;
+}
 .stop-card.minimized .card-img,
 .stop-card.minimized .card-cn,
 .stop-card.minimized .card-desc,
 .stop-card.minimized .card-meta,
 .stop-card.minimized .card-videos {
-  opacity: 0;
   pointer-events: none;
-  transition: opacity .15s ease;
 }
-.stop-card.minimized .card-header { align-items: center; }
-.stop-card.minimized .card-icon {
-  width: 32px;
-  height: 32px;
-  font-size: 18px;
-  background: transparent;
-}
-.stop-card.minimized .card-name {
-  font-size: 13px;
-  font-weight: 600;
-}
-/* Drag-handle bar (only when expanded) */
+
+/* Drag handle — large tap target, always visible at top of card */
 .drag-handle {
-  width: 40px;
-  height: 4px;
-  background: rgba(0,0,0,0.18);
-  border-radius: 2px;
-  margin: -8px auto 10px;
+  position: relative;
+  width: 100%;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  margin: -6px -22px 6px;
+  padding: 0 22px;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
+.drag-handle::before {
+  content: '';
+  width: 44px;
+  height: 5px;
+  background: rgba(0,0,0,0.22);
+  border-radius: 3px;
+  transition: width .2s ease, background .2s ease;
+}
+.drag-handle:hover::before {
+  width: 56px;
+  background: rgba(0,0,0,0.36);
+}
+.stop-card.minimized .drag-handle::before {
+  width: 56px;
+  background: rgba(0,0,0,0.36);
+}
+.drag-handle:active::before {
+  background: var(--tierA);
+}
+
 .card-toggle {
   position: absolute;
-  top: 12px;
+  top: 30px;
   right: 12px;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border: none;
   background: transparent;
   font-size: 16px;
   cursor: pointer;
-  opacity: 0.6;
+  opacity: 0.55;
   border-radius: 8px;
-  transition: all .2s ease;
+  transition: opacity .2s ease, background .2s ease;
   color: var(--ink);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2;
+  -webkit-tap-highlight-color: transparent;
 }
 .card-toggle:hover, .card-toggle:active { opacity: 1; background: rgba(0,0,0,0.08); }
-.stop-card.minimized .card-toggle { top: 9px; }
 .card-img {
   width: 100%;
   max-height: 180px;
@@ -381,14 +396,14 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   .filter-panel button { padding: 6px 10px; font-size: 12px; }
   .trip-badge { top: 10px; right: 10px; padding: 8px 12px; }
   .badge-title { font-size: 13px; }
-  .stop-card { bottom: 14px; padding: 12px 16px 14px; min-width: 0; max-height: 60vh; }
-  .stop-card.minimized { max-height: 50px; padding-top: 9px; padding-bottom: 9px; }
-  .card-icon { width: 40px; height: 40px; font-size: 22px; }
-  .stop-card.minimized .card-icon { width: 28px; height: 28px; font-size: 16px; }
-  .card-name { font-size: 15px; }
-  .stop-card.minimized .card-name { font-size: 12px; }
-  .card-toggle { width: 36px; height: 36px; font-size: 18px; top: 10px; right: 10px; }
-  .stop-card.minimized .card-toggle { top: 7px; }
+  .stop-card { bottom: 14px; padding: 6px 16px 14px; min-width: 0; max-height: 72vh; }
+  .stop-card.minimized { transform: translateX(-50%) translateY(calc(100% - 62px)); }
+  .drag-handle { height: 32px; margin: -6px -16px 4px; padding: 0 16px; }
+  .drag-handle::before { width: 48px; height: 5px; }
+  .stop-card.minimized .drag-handle::before { width: 64px; }
+  .card-icon { width: 38px; height: 38px; font-size: 20px; }
+  .card-name { font-size: 14px; }
+  .card-toggle { width: 40px; height: 40px; font-size: 18px; top: 30px; right: 8px; }
   .disclaimer { display: none; }
 }
 </style>
@@ -504,6 +519,7 @@ for (let i = 0; i < A_ORDER.length - 1; i++) {
 const cardEl = document.getElementById('stopCard');
 const cardImg = document.getElementById('cardImg');
 const toggleBtn = document.getElementById('cardToggle');
+const dragHandle = cardEl.querySelector('.drag-handle');
 
 function setMinimized(min) {
   cardEl.classList.toggle('minimized', min);
@@ -511,16 +527,108 @@ function setMinimized(min) {
   toggleBtn.setAttribute('aria-label', min ? 'Expand' : 'Minimize');
 }
 
+// Toggle button (tap)
 toggleBtn.addEventListener('click', e => {
   e.stopPropagation();
   setMinimized(!cardEl.classList.contains('minimized'));
 });
 
-// Click anywhere on minimized card → expand
-cardEl.addEventListener('click', e => {
-  if (cardEl.classList.contains('minimized') && !e.target.closest('a, button')) {
-    setMinimized(false);
+// ── Drag gesture on handle (bottom-sheet pattern) ──
+let dragState = null;
+
+function getMinimizedY() {
+  // Card translateY value when minimized; equals (cardHeight - peekTop)
+  // peekTop = how many pixels of card top remain visible
+  const peek = (window.innerWidth <= 600) ? 62 : 64;
+  return Math.max(0, cardEl.offsetHeight - peek);
+}
+
+function dragStart(clientY) {
+  if (cardEl.classList.contains('hide')) return;
+  // First clear any class transform so offsetHeight reflects full card
+  const wasMin = cardEl.classList.contains('minimized');
+  // Temporarily remove minimized to measure full height
+  if (wasMin) cardEl.classList.remove('minimized');
+  const fullHeight = cardEl.offsetHeight;
+  if (wasMin) cardEl.classList.add('minimized');
+
+  const peek = (window.innerWidth <= 600) ? 62 : 64;
+  const minY = Math.max(0, fullHeight - peek);
+
+  dragState = {
+    startY: clientY,
+    startTranslate: wasMin ? minY : 0,
+    minY,
+    moved: false,
+  };
+  cardEl.classList.add('dragging');
+}
+
+function dragMove(clientY) {
+  if (!dragState) return;
+  const delta = clientY - dragState.startY;
+  if (Math.abs(delta) > 4) dragState.moved = true;
+  let newY = dragState.startTranslate + delta;
+  newY = Math.max(0, Math.min(dragState.minY, newY));
+  cardEl.style.transform = `translateX(-50%) translateY(${newY}px)`;
+}
+
+function dragEnd(clientY) {
+  if (!dragState) return;
+  cardEl.classList.remove('dragging');
+  cardEl.style.transform = '';  // clear inline so CSS class takes over
+
+  if (!dragState.moved) {
+    // Tap on handle → toggle
+    setMinimized(!cardEl.classList.contains('minimized'));
+    dragState = null;
+    return;
   }
+
+  const delta = (clientY != null ? clientY : dragState.startY) - dragState.startY;
+  const finalY = Math.max(0, Math.min(dragState.minY, dragState.startTranslate + delta));
+  // Snap to nearest state based on midpoint
+  setMinimized(finalY > dragState.minY / 2);
+  dragState = null;
+}
+
+// Touch events (mobile primary)
+dragHandle.addEventListener('touchstart', e => {
+  if (e.touches.length !== 1) return;
+  dragStart(e.touches[0].clientY);
+  e.preventDefault();
+}, { passive: false });
+
+dragHandle.addEventListener('touchmove', e => {
+  if (!dragState || e.touches.length !== 1) return;
+  dragMove(e.touches[0].clientY);
+  e.preventDefault();
+}, { passive: false });
+
+dragHandle.addEventListener('touchend', e => {
+  const t = e.changedTouches && e.changedTouches[0];
+  dragEnd(t ? t.clientY : null);
+});
+
+dragHandle.addEventListener('touchcancel', () => dragEnd(null));
+
+// Mouse events (desktop fallback)
+dragHandle.addEventListener('mousedown', e => {
+  dragStart(e.clientY);
+  e.preventDefault();
+});
+document.addEventListener('mousemove', e => {
+  if (dragState) dragMove(e.clientY);
+});
+document.addEventListener('mouseup', e => {
+  if (dragState) dragEnd(e.clientY);
+});
+
+// Tap on minimized card body (non-handle, non-link) → expand
+cardEl.addEventListener('click', e => {
+  if (!cardEl.classList.contains('minimized')) return;
+  if (e.target.closest('a, button, .drag-handle')) return;
+  setMinimized(false);
 });
 
 function focusStop(slug) {
