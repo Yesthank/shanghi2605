@@ -147,7 +147,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 .suvin-list li .name { font-weight: 600; }
 .suvin-list li .hint { font-size: 10px; opacity: 0.55; margin-left: 4px; }
 
-/* Stop info card (bottom, slide-up drawer) */
+/* Stop info card — max-height collapse drawer (mobile-safe) */
 .stop-card {
   position: fixed;
   bottom: 20px;
@@ -159,57 +159,67 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   width: calc(100% - 32px);
   max-height: 65vh;
   overflow-y: auto;
-  /* Slide transform — used by .hide and .minimized */
-  transform: translateX(-50%) translateY(0);
-  transition: transform .42s cubic-bezier(.2,.85,.2,1), opacity .3s ease;
+  transform: translateX(-50%);
+  transition: max-height .38s cubic-bezier(.2,.85,.2,1),
+              padding .25s ease,
+              opacity .25s ease,
+              bottom .35s ease;
   opacity: 1;
 }
 .stop-card.hide {
   opacity: 0;
-  transform: translateX(-50%) translateY(40px);
+  bottom: -40px;
   pointer-events: none;
 }
-/* Minimized = slide most of card below viewport, leaving ~56px tab visible */
+/* Minimized = collapse height to header-only (54px) */
 .stop-card.minimized {
-  transform: translateX(-50%) translateY(calc(100% - 56px));
-  cursor: pointer;
+  max-height: 54px;
+  padding-top: 10px;
+  padding-bottom: 10px;
   overflow: hidden;
+  cursor: pointer;
 }
-.stop-card.minimized:hover {
-  transform: translateX(-50%) translateY(calc(100% - 66px));
-}
+.stop-card.minimized .drag-handle { display: none; }
 .stop-card.minimized .card-img,
 .stop-card.minimized .card-cn,
 .stop-card.minimized .card-desc,
 .stop-card.minimized .card-meta,
 .stop-card.minimized .card-videos {
+  opacity: 0;
   pointer-events: none;
+  transition: opacity .15s ease;
 }
-/* Drag-handle bar at top of card */
+.stop-card.minimized .card-header { align-items: center; }
+.stop-card.minimized .card-icon {
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  background: transparent;
+}
+.stop-card.minimized .card-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+/* Drag-handle bar (only when expanded) */
 .drag-handle {
-  width: 36px;
+  width: 40px;
   height: 4px;
-  background: rgba(0,0,0,0.15);
+  background: rgba(0,0,0,0.18);
   border-radius: 2px;
   margin: -8px auto 10px;
-  transition: background .2s ease;
-}
-.stop-card.minimized .drag-handle {
-  background: rgba(0,0,0,0.28);
-  width: 48px;
 }
 .card-toggle {
   position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 28px;
-  height: 28px;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
   border: none;
   background: transparent;
-  font-size: 14px;
+  font-size: 16px;
   cursor: pointer;
-  opacity: 0.5;
-  border-radius: 6px;
+  opacity: 0.6;
+  border-radius: 8px;
   transition: all .2s ease;
   color: var(--ink);
   display: flex;
@@ -217,7 +227,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   justify-content: center;
   z-index: 2;
 }
-.card-toggle:hover { opacity: 1; background: rgba(0,0,0,0.06); }
+.card-toggle:hover, .card-toggle:active { opacity: 1; background: rgba(0,0,0,0.08); }
+.stop-card.minimized .card-toggle { top: 9px; }
 .card-img {
   width: 100%;
   max-height: 180px;
@@ -370,9 +381,14 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   .filter-panel button { padding: 6px 10px; font-size: 12px; }
   .trip-badge { top: 10px; right: 10px; padding: 8px 12px; }
   .badge-title { font-size: 13px; }
-  .stop-card { bottom: 14px; padding: 12px 16px; min-width: 0; }
+  .stop-card { bottom: 14px; padding: 12px 16px 14px; min-width: 0; max-height: 60vh; }
+  .stop-card.minimized { max-height: 50px; padding-top: 9px; padding-bottom: 9px; }
   .card-icon { width: 40px; height: 40px; font-size: 22px; }
+  .stop-card.minimized .card-icon { width: 28px; height: 28px; font-size: 16px; }
   .card-name { font-size: 15px; }
+  .stop-card.minimized .card-name { font-size: 12px; }
+  .card-toggle { width: 36px; height: 36px; font-size: 18px; top: 10px; right: 10px; }
+  .stop-card.minimized .card-toggle { top: 7px; }
   .disclaimer { display: none; }
 }
 </style>
