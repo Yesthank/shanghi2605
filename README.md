@@ -1,57 +1,71 @@
 # 🇨🇳 Shanghai Trip Map (2026.05.22–05.25)
 
-상하이 3박 4일 여행용 인터랙티브 지도 프로토타입.
+상하이 3박 4일 여행용 인터랙티브 지도 프로토타입 — **27 stops · 전부 이미지 · YouTube 타임스탬프 링크**.
 
 > **Live URL** (GitHub Pages 활성화 후): https://yesthank.github.io/shanghi2605/
 
 ## 파일
 
-- [`shanghai-map.html`](./shanghai-map.html) — 단일 파일 지도 (Leaflet + OSM)
-- [`index.html`](./index.html) — `shanghai-map.html` 으로 리디렉트
+- [`shanghai-map.html`](./shanghai-map.html) — 단일 파일 지도 (Leaflet + OSM, ~1.6MB)
+- [`index.html`](./index.html) — `shanghai-map.html` 으로 자동 리디렉트
 
-## 무엇
+## 무엇 (v3)
 
-- **호텔 1 + 명소 9 + 식당 4 = 14 마커**
-- 추천 강도순 자동 투어 (호텔→와이탄→위위안→동방명주→상하이타워→진마오)
-- Top 10 사이드 패널 (가중치 내림차순)
-- 5개 핵심 명소 이미지 (base64 inline)
-- Tier A (Top 5) / Tier B (Top 6–10) 필터
-- 모바일 viewport 호환
+- **27 마커** = 호텔 1 + 명소 14 + 식당 12
+- **모든 stop 에 이미지** (base64 inline, ~1.2MB 합계)
+- **영상 출처 클릭 = YouTube 해당 발화 시점으로** (42개 타임스탬프 페어, srt 직접 파싱)
+- **수빈 추천 12개 통합** — Notion 여행/상하이/🗺️ 수빈의 제안 페이지에서 fetch
+- **5종 필터**: All / Top 5 / Top 6–10 / 식당만 / 수빈 추천
+- 자동재생·컨트롤바 없음 (시야 방해 회피)
+- Top 10 사이드 패널 + 수빈 추천 별도 리스트
 
 ## 데이터 소스
 
-15편 유튜브 영상 (총 자막 535K자) 자동 추출 + 가중치 분석:
-- 가중치 = `log1p(구독자) × log1p(조회수) × 성별보너스`
-- 36개 엔티티 / 454 mention
-- 호텔: Notion 여행 페이지 — Atour Light Hotel Shanghai Bund Dashijie
+1. **YouTube 15편** (총 자막 535K자) → 가중치 분석
+   - 가중치 = `log1p(구독자) × log1p(조회수) × 성별보너스`
+   - 36개 엔티티 · 454 mention
+2. **Notion 여행/상하이 페이지** — 항공/숙소 + 수빈의 제안 추천 장소
+3. **이미지** — Baidu Image Search (icrawler 0.6.10), 키워드 큐레이션
 
 ## 사용 기술
 
 - **Leaflet 1.9.4** + OpenStreetMap (API 키 불필요)
 - 단일 HTML, 외부 의존 = leaflet CDN 한 줄
-- base64 inline 이미지 (self-contained ~399KB)
+- base64 inline 이미지 (self-contained ~1.6MB)
 - Vanilla JS (프레임워크 없음)
+- SRT 파싱 → 타임스탬프 추출 → `&t=<seconds>s` URL 형식
+
+## YouTube 출처 타임스탬프 예시
+
+각 마커 popup 의 `▶ #N 채널명 [MM:SS]` 클릭 시 새 탭에서 YouTube 해당 시점으로:
+- 위위안: 7편 영상 모두 타임스탬프 (예: #3 JTBC Life @ 12:25)
+- 와이탄: 9편 영상 모두 타임스탬프
+- 동방명주: 8편 영상 모두 타임스탬프
+- ...총 42개 (slug, video) 페어
 
 ## 한계
 
 - 좌표계: WGS84 사용 (중국 본토 GCJ-02 대비 ~150m 오프셋)
-- 식당 4개 좌표 추정 (popup 에 "APPROX" 빨간 배지)
+- 식당 절반 좌표 추정 (popup 에 "APPROX" 빨간 배지)
 - 동선은 시간순 X — 추천 강도순 walk
-- 이미지: Baidu 검색 결과 (개인 prototype 한정)
+- 이미지: Baidu 검색 결과 (개인 prototype 한정 · 외부 배포 시 라이선스 재확인)
+- 수빈 추천 중 영상에 등장하지 않는 stop = 타임스탬프 없음 (마커는 살아있음)
 
 ## GitHub Pages 활성화
 
-저장소 Settings → Pages → Source: `Deploy from a branch` → Branch: `main` → `/ (root)` → Save.
+Settings → Pages → Source: `Deploy from a branch` → Branch: `main` → `/ (root)` → Save.
 
 활성화 후 ~30초 내 https://yesthank.github.io/shanghi2605/ 에서 자동 리디렉트.
 
 ## 워크플로
 
 ```
-oh-my-claudecode (OMC) /ralplan → /ralph-loop
+oh-my-claudecode (OMC) /ralplan → /ralph-loop → 반복
 ```
 
-Planner → codex-peer-review (Architect+Critic) → 5건 ITERATE 반영 → APPROVE → Iter 1 (skeleton) → Iter 2 (이미지+식당) → ALL GREEN.
+- **Iter 1**: skeleton (10 stops)
+- **Iter 2**: 5 이미지 + 4 식당
+- **Iter 3 (본 버전)**: 27 stops · 모든 이미지 · YouTube 타임스탬프 · 수빈 통합 · 컨트롤바 제거
 
 ---
 
