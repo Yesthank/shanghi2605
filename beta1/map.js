@@ -42,9 +42,9 @@
     var variant = data && data.VARIANT;
     var resolvedVariant = (variant === 'cn' || variant === 'intl') ? variant : 'intl';
 
-    // Initial center = baseline hotel coord (corrected: 寧波路 586號, Atour People's Square)
+    // Initial center = baseline hotel coord (Atour Light 大世界 metro, 云南南路 118号)
     MAP = L.map('map', {
-      center: [31.2376, 121.4818],
+      center: [31.2308, 121.479],
       zoom: 15,
       zoomControl: true,
       attributionControl: true
