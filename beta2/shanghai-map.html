@@ -6,6 +6,9 @@
 <title>Shanghai Trip · 추천 강도순 지도</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #faf8f4;
@@ -18,8 +21,9 @@
   --landmark: #3a4a7a;
   --restaurant: #d6553b;
   --suvin: #7b3a8a;
-  --font-body: -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-body: 'Noto Sans KR', -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   --font-serif: 'Nanum Myeongjo', 'Batang', Georgia, serif;
+  --font-quote: 'Nanum Myeongjo', 'Batang', Georgia, serif;
   --font-mono: 'SF Mono', 'Menlo', 'Consolas', monospace;
   --radius: 14px;
   --glass-border: 1px solid rgba(255,255,255,0.18);
@@ -288,19 +292,29 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 }
 .youtube-mention .yt-quote {
   color: #333;
-  font-style: italic;
-  font-family: var(--font-serif);
-  font-size: 13.5px;
-  line-height: 1.7;
+  font-family: var(--font-quote);
+  font-size: 14px;
+  line-height: 1.75;
+  letter-spacing: -0.01em;
+  font-weight: 400;
 }
 .youtube-mention .yt-quote::before { content: '\201C'; color: #ff5a00; font-size: 22px; font-style: normal; vertical-align: -5px; margin-right: 4px; font-weight: 600; }
 .youtube-mention .yt-quote::after  { content: '\201D'; color: #ff5a00; font-size: 22px; font-style: normal; vertical-align: -5px; margin-left: 4px; font-weight: 600; }
 .youtube-mention .yt-quote.is-full { display: none; }
 .youtube-mention.expanded .yt-quote.is-hook { display: none; }
 .youtube-mention.expanded .yt-quote.is-full { display: block; }
-.youtube-mention .yt-quote strong { font-style: normal; }
-.youtube-mention .yt-quote strong.kw-place { color: #1a4a8a; font-weight: 700; background: rgba(26, 74, 138, 0.08); padding: 1px 4px; border-radius: 3px; }
-.youtube-mention .yt-quote strong.kw-positive { color: #c4360a; font-weight: 700; }
+.youtube-mention .yt-quote strong.kw-place {
+  color: #1a4a8a; font-weight: 800;
+  background: rgba(26, 74, 138, 0.08);
+  padding: 1px 5px; border-radius: 4px;
+  font-family: 'Noto Sans KR', sans-serif;  /* sans for crisp emphasis */
+  font-size: 13px;
+}
+.youtube-mention .yt-quote strong.kw-positive {
+  color: #c4360a; font-weight: 700;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+}
 .youtube-mention .yt-meta {
   font-size: 11px;
   color: #777;
