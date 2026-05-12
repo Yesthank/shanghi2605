@@ -4,9 +4,10 @@
 
 :root {
   /* 8 category colors (3 in-use today: hotel/landmark/restaurant; 5 reserved for Beta1.1 reclassify) */
-  --cat-hotel:      #5b8ff9;
-  --cat-landmark:   #5ad8a6;
-  --cat-restaurant: #f6bd16;
+  /* Higher contrast palette (2026-05-12): hotel deepened, restaurant warmer, landmark teal-shifted */
+  --cat-hotel:      #d63384;   /* magenta — baseline, must dominate */
+  --cat-landmark:   #14b8a6;   /* teal */
+  --cat-restaurant: #f97316;   /* orange (was yellow — confused with road labels) */
   --cat-cafe:       #d97706;
   --cat-museum:     #a78bfa;
   --cat-shopping:   #ec4899;
@@ -113,12 +114,26 @@ html, body {
 .marker-pin svg { width: 20px; height: 20px; stroke-width: 2.4; }
 .marker-pin.cat-hotel      { background: var(--cat-hotel); }
 .marker-pin.cat-landmark   { background: var(--cat-landmark); }
-.marker-pin.cat-restaurant { background: var(--cat-restaurant); color: #1a1a1a; }
+.marker-pin.cat-restaurant { background: var(--cat-restaurant); }
 .marker-pin.cat-cafe       { background: var(--cat-cafe); }
 .marker-pin.cat-museum     { background: var(--cat-museum); }
 .marker-pin.cat-shopping   { background: var(--cat-shopping); }
 .marker-pin.cat-transit    { background: var(--cat-transit); }
 .marker-pin.cat-river      { background: var(--cat-river); }
+
+/* Baseline marker (hotel): larger + double ring + pulse + always-on label */
+.marker-pin.is-baseline {
+  width: 56px; height: 56px;
+  border: 3px solid white;
+  box-shadow: 0 0 0 4px var(--cat-hotel), 0 4px 14px rgba(0,0,0,0.6);
+  animation: pulse-baseline 2.4s ease-in-out infinite;
+  z-index: 999;
+}
+.marker-pin.is-baseline svg { width: 28px; height: 28px; stroke-width: 2.6; }
+@keyframes pulse-baseline {
+  0%, 100% { box-shadow: 0 0 0 4px var(--cat-hotel), 0 4px 14px rgba(0,0,0,0.6); }
+  50%      { box-shadow: 0 0 0 10px rgba(214,51,132,0.25), 0 4px 14px rgba(0,0,0,0.6); }
+}
 
 .marker-label {
   background: rgba(0,0,0,0.78);
@@ -127,6 +142,15 @@ html, body {
   border-radius: 4px;
   font-size: 0.75rem;
   white-space: nowrap;
+}
+.marker-label-baseline {
+  background: var(--cat-hotel);
+  color: white;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 2px solid white;
 }
 
 /* ── Stop card (bottom sheet) ───────────────────────────────────────── */
@@ -153,6 +177,23 @@ html, body {
 .stop-card .card-body { padding: 0 16px 24px; }
 .stop-card .card-img { width: 100%; max-height: 160px; object-fit: cover; border-radius: 8px; }
 .stop-card .card-title { font-size: 1.1rem; font-weight: 700; margin: 12px 0 4px; }
+.stop-card .baseline-badge {
+  display: inline-block;
+  background: var(--cat-hotel);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+  letter-spacing: 0.04em;
+}
+.stop-card .address {
+  font-size: 0.78rem;
+  color: var(--fg-dim);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  margin: 4px 0 8px;
+}
 .stop-card .card-cn { color: var(--fg-dim); font-size: 0.85rem; margin-bottom: 8px; }
 .stop-card .card-desc { font-size: 0.9rem; line-height: 1.5; margin: 8px 0; }
 .stop-card .meta-row {

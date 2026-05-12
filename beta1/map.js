@@ -42,9 +42,10 @@
     var variant = data && data.VARIANT;
     var resolvedVariant = (variant === 'cn' || variant === 'intl') ? variant : 'intl';
 
+    // Initial center = baseline hotel coord (corrected: 寧波路 586號, Atour People's Square)
     MAP = L.map('map', {
-      center: [31.2308, 121.479], // hotel
-      zoom: 14,
+      center: [31.2376, 121.4818],
+      zoom: 15,
       zoomControl: true,
       attributionControl: true
     });
@@ -80,13 +81,17 @@
 
   function buildDivIcon(stop) {
     var iconKey = stop.categoryIconKey || 'landmark';
-    var svg = (window.__ICONS__ && window.__ICONS__.svg(iconKey, 'currentColor', 20)) || '';
-    var html = '<div class="marker-pin ' + categoryColorClass(stop) + '">' + svg + '</div>';
+    var iconSize = stop.isBaseline ? 28 : 20;
+    var svg = (window.__ICONS__ && window.__ICONS__.svg(iconKey, 'currentColor', iconSize)) || '';
+    var classes = 'marker-pin ' + categoryColorClass(stop);
+    if (stop.isBaseline) classes += ' is-baseline';
+    var html = '<div class="' + classes + '">' + svg + '</div>';
+    var dim = stop.isBaseline ? 56 : 36;
     return L.divIcon({
       html: html,
-      className: 'marker-pin-wrap',
-      iconSize: [36, 36],
-      iconAnchor: [18, 18]
+      className: 'marker-pin-wrap' + (stop.isBaseline ? ' marker-baseline-wrap' : ''),
+      iconSize: [dim, dim],
+      iconAnchor: [dim / 2, dim / 2]
     });
   }
 
@@ -120,8 +125,14 @@
       if (catFilter && s.category !== catFilter) return;
       if (matchedSlugs && !matchedSlugs.has(s.slug)) return;
 
-      var marker = L.marker([s.lat, s.lng], { icon: buildDivIcon(s), title: tooltipText(s) });
-      marker.bindTooltip(tooltipText(s), { direction: 'top', offset: [0, -16], className: 'marker-label' });
+      var markerOpts = { icon: buildDivIcon(s), title: tooltipText(s) };
+      if (s.isBaseline) markerOpts.zIndexOffset = 1000; // baseline always above other markers
+      var marker = L.marker([s.lat, s.lng], markerOpts);
+      var labelClass = 'marker-label' + (s.isBaseline ? ' marker-label-baseline' : '');
+      marker.bindTooltip(s.isBaseline ? '🏠 ' + tooltipText(s) : tooltipText(s), {
+        direction: 'top', offset: [0, s.isBaseline ? -28 : -16],
+        className: labelClass, permanent: !!s.isBaseline
+      });
       marker.on('click', function () {
         if (window.__UI__) window.__UI__.openCard(s.slug);
       });

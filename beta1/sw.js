@@ -7,7 +7,7 @@
  * Prefetch is chunked Promise.allSettled with 80% success threshold.
  */
 
-const BUILD_ID = 'dafe2f0';
+const BUILD_ID = '8b0619b';
 const VARIANT  = 'intl';
 const SHELL_CACHE = `beta1-shell-${BUILD_ID}-${VARIANT}`;
 const TILE_CACHE  = 'beta1-tiles-v1';

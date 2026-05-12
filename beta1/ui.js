@@ -42,8 +42,10 @@
   function renderCard(stop) {
     var state = window.__BETA1_STATE__;
     var bits = [];
+    if (stop.isBaseline) bits.push('<div class="baseline-badge">🏠 베이스라인 · 출발/회귀점</div>');
     bits.push('<h2 class="card-title">' + escapeHtml(stop.nameKr) + '</h2>');
     if (stop.nameCn) bits.push('<div class="card-cn">' + escapeHtml(stop.nameCn) + '</div>');
+    if (stop.address) bits.push('<div class="address">📍 ' + escapeHtml(stop.address) + '</div>');
 
     var chips = [];
     if (stop.approx) chips.push(metaChip('APPROX', 'approx'));
