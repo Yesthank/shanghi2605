@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>coords-fix.js unit test (5 known points)</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2em auto; padding: 0 1em; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+  th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+  .pass { color: #060; font-weight: 600; }
+  .fail { color: #c00; font-weight: 600; }
+  #summary { font-size: 1.2em; padding: 0.6em 1em; border-radius: 6px; margin-top: 1em; }
+  #summary.ok { background: #dfd; }
+  #summary.bad { background: #fdd; }
+</style>
+</head>
+<body>
+<h1>coords-fix.js — 5 Known Points</h1>
+<p>Asserts that <code>gcj02ToWgs84(input)</code> returns coordinates within 50m of expected WGS-84 reference.</p>
+
+<table id="results">
+  <thead><tr><th>Point</th><th>GCJ-02 input</th><th>WGS-84 actual</th><th>WGS-84 expected</th><th>Distance (m)</th><th>Verdict</th></tr></thead>
+  <tbody></tbody>
+</table>
+
+<div id="summary"></div>
+
+<script src="../coords-fix.js"></script>
+<script>
+  // Reference WGS-84 coords sourced from independent (OSM, Wikidata) lookups.
+  // GCJ-02 inputs: from Gaode-aligned data (e.g. prototype-map/stops_v3.json).
+  // Expected offset 50-300m typical for Shanghai.
+  var POINTS = [
+    { name: 'Yu Garden 豫园', gcj: [121.4920, 31.2266], wgs: [121.4868, 31.2273] },
+    { name: 'The Bund 外滩',  gcj: [121.4905, 31.2397], wgs: [121.4853, 31.2404] },
+    { name: 'Oriental Pearl', gcj: [121.4995, 31.2397], wgs: [121.4942, 31.2403] },
+    { name: 'PVG 浦东机场',   gcj: [121.8083, 31.1443], wgs: [121.8027, 31.1453] },
+    { name: 'SHA 虹桥机场',   gcj: [121.3363, 31.1979], wgs: [121.3318, 31.1980] }
+  ];
+
+  function haversine(a, b) {
+    var R = 6371000;
+    var lat1 = a[1] * Math.PI / 180, lat2 = b[1] * Math.PI / 180;
+    var dlat = (b[1] - a[1]) * Math.PI / 180;
+    var dlng = (b[0] - a[0]) * Math.PI / 180;
+    var x = Math.sin(dlat/2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dlng/2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(x));
+  }
+
+  var TOLERANCE = 50; // metres
+  var pass = 0, fail = 0;
+  var tbody = document.querySelector('#results tbody');
+
+  POINTS.forEach(function (p) {
+    var out = window.__COORDS__.gcj02ToWgs84(p.gcj[0], p.gcj[1]);
+    var dist = haversine([out.lng, out.lat], p.wgs);
+    var ok = dist <= TOLERANCE;
+    if (ok) pass++; else fail++;
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>' + p.name + '</td>' +
+      '<td>' + p.gcj.join(', ') + '</td>' +
+      '<td>' + out.lng.toFixed(6) + ', ' + out.lat.toFixed(6) + '</td>' +
+      '<td>' + p.wgs.join(', ') + '</td>' +
+      '<td>' + dist.toFixed(1) + '</td>' +
+      '<td class="' + (ok ? 'pass' : 'fail') + '">' + (ok ? 'PASS' : 'FAIL') + '</td>';
+    tbody.appendChild(tr);
+  });
+
+  var summary = document.getElementById('summary');
+  summary.textContent = 'PASS ' + pass + ' / FAIL ' + fail + ' / TOTAL ' + POINTS.length + ' (tolerance ' + TOLERANCE + 'm)';
+  summary.className = fail === 0 ? 'ok' : 'bad';
+</script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+  <meta name="theme-color" content="#1f6feb">
+  <meta name="description" content="상하이 여행 인터랙티브 지도 (Beta1) — 26 stops, 영업시간, 결제수단, 오프라인 지원">
+  <!-- ADR-002: page-initiated fetch referrer policy (sw.js handles its own per-fetch policy) -->
+  <meta name="referrer" content="no-referrer">
+  <title>Shanghai Map — Beta1</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="stylesheet" href="./vendor/leaflet.css">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <!-- Degradation banner (Principle #6) -->
+  <div class="degradation-banner" id="degBanner"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <h1>상하이 Beta1</h1>
+    <div class="spacer"></div>
+    <button id="btnDay" type="button">Day</button>
+    <button id="btnList" type="button">리스트</button>
+    <button id="btnPrefetch" type="button" title="오프라인 준비">📥</button>
+    <button id="btnShare" type="button" title="QR 공유">🔗</button>
+  </header>
+
+  <!-- Day chip filter -->
+  <div class="day-filter" id="dayFilter">
+    <button data-day="all" class="active">전체</button>
+    <button data-day="1">Day 1</button>
+    <button data-day="2">Day 2</button>
+    <button data-day="3">Day 3</button>
+  </div>
+
+  <!-- Search -->
+  <div class="search">
+    <input id="searchInput" type="search" placeholder="검색 (stop·desc)" aria-label="장소 검색">
+  </div>
+
+  <!-- Map container -->
+  <div id="map" role="main" aria-label="상하이 지도"></div>
+
+  <!-- List view (toggle from header, also used for print) -->
+  <section class="list-view" id="listView" aria-label="장소 리스트"></section>
+
+  <!-- Stop card (bottom sheet) -->
+  <article class="stop-card" id="stopCard" aria-live="polite">
+    <button class="close" id="cardClose" aria-label="닫기">×</button>
+    <div class="drag-handle"></div>
+    <div class="card-body" id="cardBody"></div>
+  </article>
+
+  <!-- Modal overlay (prefetch + QR) -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modalBody"></div>
+  </div>
+
+  <!-- Footer disclaimer (always visible) -->
+  <footer class="footer">
+    Map © Gaode/AutoNavi (개인 비영리) · Icons © Lucide ISC + Maki CC0 · Coords from eviltransform MIT · 이미지 prototype Baidu (Beta1.1: Unsplash/Wikimedia CC0 교체 예정)
+  </footer>
+
+  <!-- Scripts (load order is critical: data → coords → icons → state → search → map → ui → app) -->
+  <script src="./vendor/leaflet.min.js"></script>
+  <script src="./data.js"></script>
+  <script src="./coords-fix.js"></script>
+  <script src="./icons.js"></script>
+  <script src="./state.js"></script>
+  <script src="./search.js"></script>
+  <script src="./map.js"></script>
+  <script src="./ui.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
