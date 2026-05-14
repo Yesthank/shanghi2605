@@ -529,23 +529,20 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 .stop-card { bottom: 90px; }
 .stop-card.minimized { transform: translateX(-50%) translateY(calc(100% - 64px)); }
 
-/* Control bar (bottom center) */
+/* Control bar — bottom-LEFT (separated from centered stop-card) */
 .control-bar {
   position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 24px;
+  left: 24px;
   z-index: 1001;
-  padding: 10px 14px;
+  padding: 8px 12px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  max-width: 480px;
-  width: calc(100% - 32px);
-  transition: opacity .35s ease;
+  gap: 6px;
+  max-width: 360px;
+  transition: opacity .35s ease, transform .35s ease;
   -webkit-tap-highlight-color: transparent;
 }
-body.card-open .control-bar { opacity: 0; pointer-events: none; }
 .ctrl-btn {
   width: 36px; height: 36px;
   border: none;
@@ -655,31 +652,94 @@ body.card-open .control-bar { opacity: 0; pointer-events: none; }
 }
 .day-overlay.show .day-overlay-sub { opacity: 1; transition-delay: .5s; }
 
-/* Now-playing slim badge (top-center) — visible during animation */
+/* Transit badge (top-center) — slim status while moving between stops */
 .now-playing {
   position: fixed;
   top: 16px;
   left: 50%;
   transform: translateX(-50%) translateY(-60px);
   z-index: 1100;
-  padding: 8px 16px;
+  padding: 7px 14px;
   border-radius: 999px;
   font-family: var(--font-serif);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   background: rgba(44,44,44,0.92);
   color: #fff;
   white-space: nowrap;
   opacity: 0;
-  transition: opacity .35s ease, transform .35s ease, background .35s ease;
+  transition: opacity .3s ease, transform .35s ease;
   pointer-events: none;
-  max-width: calc(100vw - 380px);
+  max-width: calc(100vw - 360px);
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.now-playing.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
+.now-playing.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Center info card — shown when arrived at a stop (dwell) */
+.center-info {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0.94);
+  z-index: 1500;
+  padding: 20px 24px;
+  width: min(420px, calc(100vw - 60px));
+  background: rgba(28,28,28,0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #fff;
+  border-radius: 20px;
+  border-left: 6px solid var(--day1);
+  box-shadow: 0 10px 50px rgba(0,0,0,0.45);
+  opacity: 0;
+  transition: opacity .4s ease, transform .4s cubic-bezier(.2,.85,.2,1);
+  pointer-events: none;
+}
+.center-info.show { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
+.center-info-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  opacity: 0.65;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.center-info-name {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.25;
+  margin-bottom: 4px;
+}
+.center-info-name-cn {
+  font-size: 12px;
+  opacity: 0.55;
+  margin-bottom: 12px;
+}
+.center-info-desc {
+  font-size: 13px;
+  line-height: 1.55;
+  opacity: 0.9;
+  max-height: 140px;
+  overflow-y: auto;
+}
+.center-info-desc strong { color: #ffdf99; font-weight: 700; }
+.center-info-dwell {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 12px;
+  padding: 5px 10px;
+  background: rgba(255,255,255,0.14);
+  display: inline-block;
+  border-radius: 8px;
+  letter-spacing: 0.4px;
+}
+.center-info-notes {
+  font-family: var(--font-body);
+  font-size: 11px;
+  opacity: 0.6;
+  margin-top: 8px;
+  font-style: italic;
 }
 
 /* Moving marker (transport emoji) — hidden until animation starts */
@@ -696,13 +756,16 @@ body.anim-on .moving-wrap { opacity: 1; }
 
 /* Mobile */
 @media (max-width: 600px) {
-  .control-bar { bottom: 14px; padding: 8px 10px; gap: 6px; }
+  .control-bar { bottom: 14px; left: 14px; padding: 6px 8px; gap: 5px; max-width: 280px; }
   .ctrl-btn { width: 34px; height: 34px; font-size: 15px; }
   .ctrl-btn.play-btn { width: 40px; height: 40px; font-size: 18px; }
-  .speed-btn { padding: 4px 7px; font-size: 10px; }
-  .stop-card { bottom: 82px; }
+  .speed-btn { padding: 4px 6px; font-size: 10px; }
+  .stop-card { bottom: 90px; }
   .day-overlay-num { font-size: 3rem; }
   .now-playing { font-size: 11px; padding: 6px 12px; max-width: calc(100vw - 32px); }
+  .center-info { padding: 16px 18px; }
+  .center-info-name { font-size: 18px; }
+  .center-info-desc { max-height: 120px; }
 }
 
 </style>
@@ -796,8 +859,11 @@ body.anim-on .moving-wrap { opacity: 1; }
   </div>
 </div>
 
-<!-- Gamma: now-playing -->
+<!-- Gamma: transit badge (top, while moving) -->
 <div class="now-playing" id="nowPlaying"></div>
+
+<!-- Gamma: center info card (visible at each stop during dwell) -->
+<div class="center-info" id="centerInfo"></div>
 
 <script>
 (function() {
@@ -817,7 +883,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap', maxZoom: 19
 }).addTo(map);
 
-const ITINERARY = [{"day": 1, "startTime": "13:10", "endTime": null, "slug": "hongqiao_airport", "nameKr": "상하이 홍차오 국제공항", "category": "airport", "durationMin": null, "travelFromPrev": null, "travelMin": null, "travelMode": null, "notes": "도착. 원본 stops 데이터에 추가 필요"}, {"day": 1, "startTime": null, "endTime": null, "slug": "hotel", "nameKr": "Atour Light 호텔", "category": "hotel", "durationMin": null, "travelFromPrev": "hongqiao_airport", "travelMin": 30, "travelMode": "robotaxi", "notes": "체크인. 로보택시 약 30분 (사용자 지정)"}, {"day": 1, "startTime": "15:00", "endTime": null, "slug": "xintiandi", "nameKr": "신톈디", "category": "landmark", "durationMin": 60, "travelFromPrev": "hotel", "travelMin": 17, "travelMode": "walk", "notes": "오후 일정 시작"}, {"day": 1, "startTime": null, "endTime": null, "slug": "kprov", "nameKr": "대한민국 임시정부 청사", "category": "landmark", "durationMin": 45, "travelFromPrev": "xintiandi", "travelMin": 5, "travelMode": "walk", "notes": "신톈디에서 도보 5분"}, {"day": 1, "startTime": null, "endTime": "17:00", "slug": null, "nameKr": "저녁 (미정)", "category": "meal", "durationMin": null, "travelFromPrev": null, "travelMin": null, "travelMode": null, "notes": "저녁 식당 추후 결정"}, {"day": 1, "startTime": "19:00", "endTime": null, "slug": "nanjing_rd", "nameKr": "난징동루", "category": "landmark", "durationMin": 60, "travelFromPrev": "kprov", "travelMin": 18, "travelMode": "walk", "notes": "쇼핑 거리. 와이탄까지 일직선"}, {"day": 1, "startTime": null, "endTime": null, "slug": "bund", "nameKr": "와이탄", "category": "landmark", "durationMin": 60, "travelFromPrev": "nanjing_rd", "travelMin": 15, "travelMode": "walk", "notes": "야경 핵심 스팟"}, {"day": 1, "startTime": null, "endTime": null, "slug": "pearl", "nameKr": "동방명주", "category": "landmark", "durationMin": 60, "travelFromPrev": "bund", "travelMin": 15, "travelMode": "ferry/metro", "notes": "황푸강 건너 — 외탄관광터널 or 지하철 2호선"}, {"day": 1, "startTime": null, "endTime": null, "slug": "hotel", "nameKr": "Atour Light 호텔", "category": "hotel", "durationMin": null, "travelFromPrev": "pearl", "travelMin": 20, "travelMode": "metro", "notes": "늦게 숙소 복귀 (2호선 People's Sq 환승)"}, {"day": 2, "startTime": null, "endTime": null, "slug": null, "nameKr": "오전 일정 (미정)", "category": "", "durationMin": null, "travelFromPrev": null, "travelMin": null, "travelMode": null, "notes": "추후 입력"}, {"day": 2, "startTime": "18:00", "endTime": null, "slug": "luxun_park", "nameKr": "루쉰공원 / 매헌 기념관", "category": "landmark", "durationMin": 90, "travelFromPrev": "hotel", "travelMin": 30, "travelMode": "metro", "notes": "지하철 8호선 → Hongkou Football Stadium"}, {"day": 2, "startTime": "19:30", "endTime": null, "slug": "circus_world", "nameKr": "상하이 서커스 월드", "category": "landmark", "durationMin": 120, "travelFromPrev": "luxun_park", "travelMin": 25, "travelMode": "bus/metro", "notes": "쇼 관람 (예약 권장)"}, {"day": 2, "startTime": null, "endTime": null, "slug": "hotel", "nameKr": "Atour Light 호텔", "category": "hotel", "durationMin": null, "travelFromPrev": "circus_world", "travelMin": 35, "travelMode": "metro", "notes": "숙소 복귀"}, {"day": 3, "startTime": null, "endTime": null, "slug": null, "nameKr": "오전 쇼핑 (장소 미정)", "category": "shopping", "durationMin": null, "travelFromPrev": null, "travelMin": null, "travelMode": null, "notes": "장소·시간 추후 입력"}, {"day": 3, "startTime": "13:00", "endTime": null, "slug": "renmin_sq", "nameKr": "인민광장", "category": "landmark", "durationMin": null, "travelFromPrev": "hotel", "travelMin": 7, "travelMode": "walk", "notes": "출발 거점 (호텔 도보 5–7분)"}, {"day": 3, "startTime": null, "endTime": null, "slug": "panlong", "nameKr": "판롱티엔디 — 신축 수향마을", "category": "landmark", "durationMin": 300, "travelFromPrev": "renmin_sq", "travelMin": 90, "travelMode": "bus", "notes": "버스 약 1.5시간 (투어 형식)"}, {"day": 3, "startTime": null, "endTime": "21:00", "slug": "hotel", "nameKr": "Atour Light 호텔", "category": "hotel", "durationMin": null, "travelFromPrev": "panlong", "travelMin": 90, "travelMode": "bus", "notes": "숙소 복귀"}, {"day": 4, "startTime": null, "endTime": "08:00", "slug": "hongqiao_airport", "nameKr": "상하이 홍차오 국제공항", "category": "airport", "durationMin": null, "travelFromPrev": "hotel", "travelMin": 40, "travelMode": "taxi", "notes": "출국. 새벽 04:30 체크아웃 (호텔 정보 기준)"}];
+const ITINERARY = [{"day": 1, "startTime": "13:10", "endTime": null, "slug": "hongqiao_airport", "nameKr": "상하이 홍차오 국제공항", "category": "airport", "durationMin": null, "travelFromPrev": null, "travelMin": null, "travelMode": null, "notes": "도착. 원본 stops 데이터에 추가 필요"}, {"day": 1, "startTime": null, "endTime": null, "slug": "hotel", "nameKr": "Atour Light 호텔", "category": "hotel", "durationMin": null, "travelFromPrev": "hongqiao_airport", "travelMin": 30, "travelMode": "robotaxi", "notes": "체크인. 로보택시 약 30분 (사용자 지정)"}, {"day": 1, "startTime": "15:00", "endTime": null, "slug": "xintiandi", "nameKr": "신톈디", "category": "landmark", "durationMin": 60, "travelFromPrev": "hotel", "travelMin": 17, "travelMode": "walk", "notes": "오후 일정 시작"}, {"day": 1, "startTime": null, "endTime": null, "slug": "kprov", "nameKr": "대한민국 임시정부 청사", "category": "landmark", "durationMin": 45, "travelFromPrev": "xintiandi", "travelMin": 5, "travelMode": "walk", "notes": "신톈디에서 도보 5분"}, {"day": 1, "startTime": null, "endTime": "17:00", "slug": null, "nameKr": "저녁 (미정)", "category": "meal", "durationMin": null, "travelFromPrev": null, "travelMin": null, "travelMode": null, "notes": "저녁 식당 추후 결정"}, {"day": 1, "startTime": "19:00", "endTime": null, "slug": "nanjing_rd", "nameKr": "난징동루", "category": "landmark", "durationMin": 60, "travelFromPrev": "kprov", "travelMin": 18, "travelMode": "walk", "notes": "쇼핑 거리. 와이탄까지 일직선"}, {"day": 1, "startTime": null, "endTime": null, "slug": "bund", "nameKr": "와이탄", "category": "landmark", "durationMin": 60, "travelFromPrev": "nanjing_rd", "travelMin": 15, "travelMode": "walk", "notes": "야경 핵심 스팟"}, {"day": 1, "startTime": null, "endTime": null, "slug": "pearl", "nameKr": "동방명주", "category": "landmark", "durationMin": 60, "travelFromPrev": "bund", "travelMin": 15, "travelMode": "ferry/metro", "notes": "황푸강 건너 — 외탄관광터널 or 지하철 2호선"}, {"day": 1, "startTime": null, "endTime": null, "slug": "hotel", "nameKr": "Atour Light 호텔", "category": "hotel", "durationMin": null, "travelFromPrev": "pearl", "travelMin": 20, "travelMode": "metro", "notes": "늦게 숙소 복귀 (2호선 People's Sq 환승)"}, {"day": 2, "startTime": null, "endTime": null, "slug": null, "nameKr": "오전 일정 (미정)", "category": "", "durationMin": null, "travelFromPrev": null, "travelMin": null, "travelMode": null, "notes": "추후 입력"}, {"day": 2, "startTime": null, "endTime": null, "slug": "hotel", "nameKr": "Atour Light 호텔", "category": "hotel", "durationMin": null, "travelFromPrev": null, "travelMin": null, "travelMode": null, "notes": "(자동) 호텔에서 시작"}, {"day": 2, "startTime": "18:00", "endTime": null, "slug": "luxun_park", "nameKr": "루쉰공원 / 매헌 기념관", "category": "landmark", "durationMin": 90, "travelFromPrev": "hotel", "travelMin": 30, "travelMode": "metro", "notes": "지하철 8호선 → Hongkou Football Stadium"}, {"day": 2, "startTime": "19:30", "endTime": null, "slug": "circus_world", "nameKr": "상하이 서커스 월드", "category": "landmark", "durationMin": 120, "travelFromPrev": "luxun_park", "travelMin": 25, "travelMode": "bus/metro", "notes": "쇼 관람 (예약 권장)"}, {"day": 2, "startTime": null, "endTime": null, "slug": "hotel", "nameKr": "Atour Light 호텔", "category": "hotel", "durationMin": null, "travelFromPrev": "circus_world", "travelMin": 35, "travelMode": "metro", "notes": "숙소 복귀"}, {"day": 3, "startTime": null, "endTime": null, "slug": null, "nameKr": "오전 쇼핑 (장소 미정)", "category": "shopping", "durationMin": null, "travelFromPrev": null, "travelMin": null, "travelMode": null, "notes": "장소·시간 추후 입력"}, {"day": 3, "startTime": null, "endTime": null, "slug": "hotel", "nameKr": "Atour Light 호텔", "category": "hotel", "durationMin": null, "travelFromPrev": null, "travelMin": null, "travelMode": null, "notes": "(자동) 호텔에서 시작"}, {"day": 3, "startTime": "13:00", "endTime": null, "slug": "renmin_sq", "nameKr": "인민광장", "category": "landmark", "durationMin": null, "travelFromPrev": "hotel", "travelMin": 7, "travelMode": "walk", "notes": "출발 거점 (호텔 도보 5–7분)"}, {"day": 3, "startTime": null, "endTime": null, "slug": "panlong", "nameKr": "판롱티엔디 — 신축 수향마을", "category": "landmark", "durationMin": 300, "travelFromPrev": "renmin_sq", "travelMin": 90, "travelMode": "bus", "notes": "버스 약 1.5시간 (투어 형식)"}, {"day": 3, "startTime": null, "endTime": "21:00", "slug": "hotel", "nameKr": "Atour Light 호텔", "category": "hotel", "durationMin": null, "travelFromPrev": "panlong", "travelMin": 90, "travelMode": "bus", "notes": "숙소 복귀"}, {"day": 4, "startTime": null, "endTime": null, "slug": "hotel", "nameKr": "Atour Light 호텔", "category": "hotel", "durationMin": null, "travelFromPrev": null, "travelMin": null, "travelMode": null, "notes": "(자동) 호텔에서 시작"}, {"day": 4, "startTime": null, "endTime": "08:00", "slug": "hongqiao_airport", "nameKr": "상하이 홍차오 국제공항", "category": "airport", "durationMin": null, "travelFromPrev": "hotel", "travelMin": 40, "travelMode": "taxi", "notes": "출국. 새벽 04:30 체크아웃 (호텔 정보 기준)"}];
 const DAY_COLORS = {1:'#d64545', 2:'#c4993e', 3:'#3a7a4a', 4:'#7b3a8a'};
 const DAY_INFO = {
   1: {date:'5월 22일 목요일', sub:'도착 → 외탄·푸둥 야경'},
@@ -1206,7 +1272,9 @@ ITINERARY.forEach((r, i) => {
   ROUTE.push({
     idx: ROUTE.length,
     slug: r.slug,
-    nameKr: r.nameKr || stop.nameKr || r.slug,
+    nameKr: stop.nameKr || r.nameKr || r.slug,
+    nameCn: stop.nameCn || '',
+    desc: stop.desc || '',
     lat: stop.lat, lng: stop.lng,
     icon: stop.icon || '🔹',
     day: r.day,
@@ -1214,9 +1282,21 @@ ITINERARY.forEach((r, i) => {
     endTime: r.endTime,
     travelMode: r.travelMode,
     travelMin: r.travelMin || 5,
+    durationMin: r.durationMin,
     notes: r.notes || ''
   });
 });
+
+// Tiny markdown stripper for desc rendering in center-info
+function mdLite(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[(.+?)\]\(([^)]+)\)/g, '$1');
+}
 
 const segments = [];
 for (let i = 0; i < ROUTE.length - 1; i++) {
@@ -1261,17 +1341,36 @@ const movingMarker = ROUTE.length
   : null;
 // Visibility is controlled via body.anim-on CSS class (avoids race with marker DOM insertion).
 
-// Helper: show the now-playing badge
-function showNowPlaying(stopIdx) {
-  const r = ROUTE[stopIdx]; if (!r) return;
+// Transit badge — slim status while moving between stops
+function showTransit(segIdx) {
+  const seg = segments[segIdx]; if (!seg) return;
+  const from = ROUTE[seg.fromStop], to = ROUTE[seg.toStop];
   const el = document.getElementById('nowPlaying');
-  const time = r.startTime || r.endTime || '';
-  el.textContent = 'Day ' + r.day + ' · ' + r.nameKr + (time ? ' · ' + time : '');
-  el.style.background = 'rgba(44,44,44,0.92)';
-  el.style.borderLeft = '4px solid ' + DAY_COLORS[r.day];
+  el.textContent = transportIcon(seg.transport) + '  ' + from.nameKr + ' → ' + to.nameKr;
+  el.style.borderLeft = '4px solid ' + DAY_COLORS[seg.day];
   el.classList.add('show');
 }
-function hideNowPlaying() { document.getElementById('nowPlaying').classList.remove('show'); }
+function hideTransit() { document.getElementById('nowPlaying').classList.remove('show'); }
+
+// Center info card — shown at each stop during dwell
+function showCenterInfo(stopIdx) {
+  const r = ROUTE[stopIdx]; if (!r) return;
+  const el = document.getElementById('centerInfo');
+  el.style.borderLeftColor = DAY_COLORS[r.day];
+  const meta = 'Day ' + r.day + (r.startTime ? '  ·  ' + r.startTime : '');
+  const dwellLine = r.durationMin
+    ? '<div class="center-info-dwell">⏱ 체류 ' + r.durationMin + '분</div>' : '';
+  const descHtml = r.desc ? '<div class="center-info-desc">' + mdLite(r.desc) + '</div>' : '';
+  const nameCnLine = r.nameCn ? '<div class="center-info-name-cn">' + r.nameCn + '</div>' : '';
+  const notesLine = (r.notes && !r.notes.startsWith('(자동)'))
+    ? '<div class="center-info-notes">' + mdLite(r.notes) + '</div>' : '';
+  el.innerHTML =
+    '<div class="center-info-meta">' + meta + '</div>' +
+    '<div class="center-info-name">' + (r.icon ? r.icon + ' ' : '') + r.nameKr + '</div>' +
+    nameCnLine + descHtml + notesLine + dwellLine;
+  el.classList.add('show');
+}
+function hideCenterInfo() { document.getElementById('centerInfo').classList.remove('show'); }
 
 const anim = {
   currentSegment: 0,
@@ -1282,14 +1381,37 @@ const anim = {
   transitioning: false,
   trailTimers: [],
   hasStarted: false,
+  _priorCardClasses: null,
+
+  _snapshotCard() {
+    const card = document.getElementById('stopCard');
+    if (!card) return;
+    this._priorCardClasses = card.className;
+    // Force-close so user can see the animation cleanly
+    if (!card.classList.contains('hide')) card.classList.add('hide');
+    card.classList.remove('minimized');
+  },
+  _restoreCard() {
+    const card = document.getElementById('stopCard');
+    if (!card || this._priorCardClasses == null) return;
+    card.className = this._priorCardClasses;
+    this._priorCardClasses = null;
+  },
 
   play() {
     if (this.transitioning || !segments.length) return;
     if (!this.hasStarted) {
       this.hasStarted = true;
-      this._showDayTransition(ROUTE[0].day, () => { this._enterSegment(0); this._startTicking(); });
+      this._snapshotCard();                  // auto-close any open card
+      hideTransit(); hideCenterInfo();
+      this._showDayTransition(ROUTE[0].day, () => {
+        // Greet the starting stop with center info, then begin
+        showCenterInfo(0);
+        setTimeout(() => { hideCenterInfo(); this._enterSegment(0); this._startTicking(); }, 1400 / this.speed);
+      });
       return;
     }
+    this._snapshotCard();
     this._startTicking();
   },
   _startTicking() {
@@ -1305,10 +1427,16 @@ const anim = {
     document.body.classList.add('anim-on');
     requestAnimationFrame(t => this.tick(t));
   },
-  pause() {
+  _pauseSilent() {
     this.isPlaying = false;
     document.getElementById('playBtn').textContent = '▶';
     document.getElementById('playBtn').setAttribute('aria-label', 'Play');
+  },
+  pause() {
+    // User-facing pause = restore everything to pre-play state
+    this._pauseSilent();
+    hideTransit(); hideCenterInfo();
+    this._restoreCard();
   },
   toggle() { this.isPlaying ? this.pause() : this.play(); },
   setSpeed(s) {
@@ -1378,15 +1506,27 @@ const anim = {
     if (seg && seg.polyline) seg.polyline.setStyle({ opacity: 0.7 });
     const nextIdx = this.currentSegment + 1;
     if (nextIdx >= segments.length) {
-      this.pause();
-      showNowPlaying(ROUTE.length - 1);
+      // End of trip — show final stop, wait, then restore
+      this._pauseSilent();
+      hideTransit();
+      showCenterInfo(ROUTE.length - 1);
       this._updateProgressBar();
+      const self = this;
+      setTimeout(function () {
+        hideCenterInfo();
+        self._restoreCard();
+        self.hasStarted = false;
+        self.currentSegment = 0;
+        self.progress = 0;
+        self._updateProgressBar();
+        self._updateRouteVisuals();
+      }, 3500 / Math.max(1, this.speed * 0.5));
       return;
     }
     const curDay = segments[this.currentSegment].day;
     const nextDay = segments[nextIdx].day;
     if (curDay !== nextDay) {
-      this.pause();
+      this._pauseSilent();
       this._dwell(seg.toStop, () => {
         this.currentSegment = nextIdx; this.progress = 0;
         this._showDayTransition(nextDay, () => { this._enterSegment(nextIdx); this._startTicking(); });
@@ -1399,17 +1539,20 @@ const anim = {
     });
   },
   _dwell(arrivedStopIdx, callback) {
-    const ms = 900 / this.speed;
-    this.pause();
-    showNowPlaying(arrivedStopIdx);
+    // Hold long enough to read the center info card
+    const ms = 1800 / this.speed;
+    this._pauseSilent();
+    hideTransit();
+    showCenterInfo(arrivedStopIdx);
     setTimeout(callback, ms);
   },
   _enterSegment(idx) {
     const seg = segments[idx]; if (!seg) return;
+    hideCenterInfo();
+    showTransit(idx);
     // Moving marker emoji = transport for THIS hop
     const live = document.querySelector('.moving-wrap .moving-marker');
     if (live) live.textContent = transportIcon(seg.transport);
-    showNowPlaying(seg.fromStop);
     this._updateRouteVisuals();
     this._updateProgressBar();
     // Camera flyTo with adaptive zoom
@@ -1443,6 +1586,7 @@ const anim = {
   },
   _showDayTransition(day, callback) {
     this.transitioning = true;
+    hideTransit(); hideCenterInfo();
     const overlay = document.getElementById('dayOverlay');
     document.getElementById('overlayNum').textContent = 'DAY ' + day;
     document.getElementById('overlayNum').style.color = DAY_COLORS[day];
@@ -1464,18 +1608,16 @@ const anim = {
     if (segments[this.currentSegment] && segments[this.currentSegment].polyline)
       segments[this.currentSegment].polyline.setStyle({ opacity: 0.7 });
     const wasPlaying = this.isPlaying;
-    this.pause();
+    this._pauseSilent();
     const curDay = segments[this.currentSegment].day;
     const nextDay = segments[next].day;
     this.currentSegment = next; this.progress = 0;
     const after = () => {
       this._enterSegment(next);
-      // Snap dot to start of new segment
       if (movingMarker) movingMarker.setLatLng(segments[next].points[0]);
       if (wasPlaying) this._startTicking();
     };
-    if (curDay !== nextDay) this._showDayTransition(nextDay, after);
-    else after();
+    if (curDay !== nextDay) this._showDayTransition(nextDay, after); else after();
   },
   prevStop() {
     if (this.transitioning) return;
@@ -1484,7 +1626,7 @@ const anim = {
     if (segments[this.currentSegment] && segments[this.currentSegment].polyline)
       segments[this.currentSegment].polyline.setStyle({ opacity: 0.22 });
     const wasPlaying = this.isPlaying;
-    this.pause();
+    this._pauseSilent();
     const curDay = segments[this.currentSegment].day;
     const prevDay = segments[prev].day;
     this.currentSegment = prev; this.progress = 0;
@@ -1493,8 +1635,7 @@ const anim = {
       if (movingMarker) movingMarker.setLatLng(segments[prev].points[0]);
       if (wasPlaying) this._startTicking();
     };
-    if (curDay !== prevDay) this._showDayTransition(prevDay, after);
-    else after();
+    if (curDay !== prevDay) this._showDayTransition(prevDay, after); else after();
   },
   seekTo(pct) {
     if (this.transitioning || !segments.length) return;
@@ -1503,13 +1644,14 @@ const anim = {
     const segIdx = Math.min(Math.floor(pos), total - 1);
     const prog = pos - segIdx;
     const wasPlaying = this.isPlaying;
-    this.pause();
+    this._pauseSilent();
     segments.forEach((s, i) => {
       if (!s.polyline) return;
       s.polyline.setStyle({ opacity: i < segIdx ? 0.7 : i === segIdx ? 0.95 : 0.22 });
     });
     this.currentSegment = segIdx;
     this.progress = prog;
+    if (!this.hasStarted) this._snapshotCard();   // seeking starts the trip
     this.hasStarted = true;
     this._enterSegment(segIdx);
     this._updatePosition();
@@ -1539,14 +1681,6 @@ document.addEventListener('keydown', e => {
   else if (e.code === 'ArrowLeft') anim.prevStop();
 });
 
-// Mirror stop-card visibility so control-bar fades when card is open
-(function watchCard() {
-  const card = document.getElementById('stopCard');
-  if (!card) return;
-  const sync = () => document.body.classList.toggle('card-open', !card.classList.contains('hide'));
-  new MutationObserver(sync).observe(card, { attributes: true, attributeFilter: ['class'] });
-  sync();
-})();
 
 })();
 </script>
