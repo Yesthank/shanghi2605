@@ -843,6 +843,7 @@ body.anim-on .moving-wrap { opacity: 1; }
 <div class="control-bar glass" id="controlBar">
   <button class="ctrl-btn" id="prevBtn" aria-label="Previous">⏮</button>
   <button class="ctrl-btn play-btn" id="playBtn" aria-label="Play">▶</button>
+  <button class="ctrl-btn" id="stopBtn" aria-label="Stop">⏹</button>
   <button class="ctrl-btn" id="nextBtn" aria-label="Next">⏭</button>
   <div class="progress-wrap" id="progressWrap"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
   <button class="speed-btn active" data-speed="1">1x</button>
@@ -1376,6 +1377,7 @@ const anim = {
   currentSegment: 0,
   progress: 0,
   isPlaying: false,
+  pausedByUser: false,     // sticky pause-intent across dwell/day-transition callbacks
   speed: 1,
   lastTimestamp: null,
   transitioning: false,
@@ -1387,7 +1389,6 @@ const anim = {
     const card = document.getElementById('stopCard');
     if (!card) return;
     this._priorCardClasses = card.className;
-    // Force-close so user can see the animation cleanly
     if (!card.classList.contains('hide')) card.classList.add('hide');
     card.classList.remove('minimized');
   },
@@ -1400,23 +1401,30 @@ const anim = {
 
   play() {
     if (this.transitioning || !segments.length) return;
+    this.pausedByUser = false;
     if (!this.hasStarted) {
       this.hasStarted = true;
-      this._snapshotCard();                  // auto-close any open card
+      this._snapshotCard();
       hideTransit(); hideCenterInfo();
       this._showDayTransition(ROUTE[0].day, () => {
-        // Greet the starting stop with center info, then begin
+        if (this.pausedByUser) return;
         showCenterInfo(0);
-        setTimeout(() => { hideCenterInfo(); this._enterSegment(0); this._startTicking(); }, 1400 / this.speed);
+        const self = this;
+        setTimeout(function () {
+          if (self.pausedByUser) return;
+          hideCenterInfo();
+          self._enterSegment(0);
+          self._startTicking();
+        }, 1400 / this.speed);
       });
       return;
     }
-    this._snapshotCard();
+    // Mid-trip resume — no snapshot needed (already taken)
     this._startTicking();
   },
   _startTicking() {
+    if (this.pausedByUser) return;          // user wants paused — don't auto-resume
     if (this.currentSegment >= segments.length) {
-      // Restart from beginning
       this.currentSegment = 0; this.progress = 0;
       this._enterSegment(0);
     }
@@ -1433,10 +1441,25 @@ const anim = {
     document.getElementById('playBtn').setAttribute('aria-label', 'Play');
   },
   pause() {
-    // User-facing pause = restore everything to pre-play state
+    // ⏸ User pause = freeze current frame, no UI restoration.
+    // Center info / transit / card-hide state stay exactly as they are.
+    this.pausedByUser = true;
     this._pauseSilent();
-    hideTransit(); hideCenterInfo();
+  },
+  stop() {
+    // ⏹ Full reset = restore original state, dot back to start, progress 0.
+    this.pausedByUser = true;
+    this._pauseSilent();
+    hideTransit();
+    hideCenterInfo();
     this._restoreCard();
+    segments.forEach(s => { if (s.polyline) s.polyline.setStyle({ opacity: 0.22 }); });
+    if (movingMarker && ROUTE.length) movingMarker.setLatLng([ROUTE[0].lat, ROUTE[0].lng]);
+    document.body.classList.remove('anim-on');
+    this.currentSegment = 0;
+    this.progress = 0;
+    this.hasStarted = false;
+    this._updateProgressBar();
   },
   toggle() { this.isPlaying ? this.pause() : this.play(); },
   setSpeed(s) {
@@ -1506,21 +1529,13 @@ const anim = {
     if (seg && seg.polyline) seg.polyline.setStyle({ opacity: 0.7 });
     const nextIdx = this.currentSegment + 1;
     if (nextIdx >= segments.length) {
-      // End of trip — show final stop, wait, then restore
+      // End of trip — final stop info, then auto-stop (full reset)
       this._pauseSilent();
       hideTransit();
       showCenterInfo(ROUTE.length - 1);
       this._updateProgressBar();
       const self = this;
-      setTimeout(function () {
-        hideCenterInfo();
-        self._restoreCard();
-        self.hasStarted = false;
-        self.currentSegment = 0;
-        self.progress = 0;
-        self._updateProgressBar();
-        self._updateRouteVisuals();
-      }, 3500 / Math.max(1, this.speed * 0.5));
+      setTimeout(function () { self.stop(); }, 3500 / Math.max(1, self.speed * 0.5));
       return;
     }
     const curDay = segments[this.currentSegment].day;
@@ -1528,23 +1543,27 @@ const anim = {
     if (curDay !== nextDay) {
       this._pauseSilent();
       this._dwell(seg.toStop, () => {
+        if (this.pausedByUser) return;
         this.currentSegment = nextIdx; this.progress = 0;
-        this._showDayTransition(nextDay, () => { this._enterSegment(nextIdx); this._startTicking(); });
+        this._showDayTransition(nextDay, () => {
+          if (this.pausedByUser) return;
+          this._enterSegment(nextIdx); this._startTicking();
+        });
       });
       return;
     }
     this._dwell(seg.toStop, () => {
+      if (this.pausedByUser) return;
       this.currentSegment = nextIdx; this.progress = 0;
       this._enterSegment(nextIdx); this._startTicking();
     });
   },
   _dwell(arrivedStopIdx, callback) {
-    // Hold long enough to read the center info card
     const ms = 1800 / this.speed;
     this._pauseSilent();
     hideTransit();
     showCenterInfo(arrivedStopIdx);
-    setTimeout(callback, ms);
+    setTimeout(callback, ms);   // callback guards pausedByUser
   },
   _enterSegment(idx) {
     const seg = segments[idx]; if (!seg) return;
@@ -1663,6 +1682,7 @@ const anim = {
 
 // Bindings
 document.getElementById('playBtn').addEventListener('click', () => anim.toggle());
+document.getElementById('stopBtn').addEventListener('click', () => anim.stop());
 document.getElementById('nextBtn').addEventListener('click', () => anim.nextStop());
 document.getElementById('prevBtn').addEventListener('click', () => anim.prevStop());
 document.querySelectorAll('.speed-btn').forEach(btn => {
