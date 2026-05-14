@@ -775,6 +775,30 @@ body.anim-on .moving-wrap { opacity: 1; }
   <div class="card-videos" id="cardVideos"></div>
 </div>
 
+
+<!-- Gamma: control bar -->
+<div class="control-bar glass" id="controlBar">
+  <button class="ctrl-btn" id="prevBtn" aria-label="Previous">⏮</button>
+  <button class="ctrl-btn play-btn" id="playBtn" aria-label="Play">▶</button>
+  <button class="ctrl-btn" id="nextBtn" aria-label="Next">⏭</button>
+  <div class="progress-wrap" id="progressWrap"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <button class="speed-btn active" data-speed="1">1x</button>
+  <button class="speed-btn" data-speed="2">2x</button>
+  <button class="speed-btn" data-speed="4">4x</button>
+</div>
+
+<!-- Gamma: day overlay -->
+<div class="day-overlay" id="dayOverlay">
+  <div class="day-overlay-content">
+    <span class="day-overlay-num" id="overlayNum">DAY 1</span>
+    <span class="day-overlay-date" id="overlayDate"></span>
+    <span class="day-overlay-sub" id="overlaySub"></span>
+  </div>
+</div>
+
+<!-- Gamma: now-playing -->
+<div class="now-playing" id="nowPlaying"></div>
+
 <script>
 (function() {
 'use strict';
@@ -1526,30 +1550,6 @@ document.addEventListener('keydown', e => {
 
 })();
 </script>
-
-
-<!-- Gamma: control bar -->
-<div class="control-bar glass" id="controlBar">
-  <button class="ctrl-btn" id="prevBtn" aria-label="Previous">⏮</button>
-  <button class="ctrl-btn play-btn" id="playBtn" aria-label="Play">▶</button>
-  <button class="ctrl-btn" id="nextBtn" aria-label="Next">⏭</button>
-  <div class="progress-wrap" id="progressWrap"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-  <button class="speed-btn active" data-speed="1">1x</button>
-  <button class="speed-btn" data-speed="2">2x</button>
-  <button class="speed-btn" data-speed="4">4x</button>
-</div>
-
-<!-- Gamma: day overlay -->
-<div class="day-overlay" id="dayOverlay">
-  <div class="day-overlay-content">
-    <span class="day-overlay-num" id="overlayNum">DAY 1</span>
-    <span class="day-overlay-date" id="overlayDate"></span>
-    <span class="day-overlay-sub" id="overlaySub"></span>
-  </div>
-</div>
-
-<!-- Gamma: now-playing -->
-<div class="now-playing" id="nowPlaying"></div>
 
 </body>
 </html>
