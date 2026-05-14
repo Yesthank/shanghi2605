@@ -524,12 +524,19 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 }
 .play-bar {
   position: fixed;
-  bottom: 24px; left: 50%; transform: translateX(-50%);
+  bottom: 24px; left: 24px;
   z-index: 999;
   display: flex; align-items: center; gap: 12px;
   padding: 8px 14px;
   border-radius: 999px;
   pointer-events: auto;
+  transition: transform .3s cubic-bezier(.2,.85,.2,1);
+}
+/* When stop-card is visible, lift play-bar above its minimized header */
+body.card-open .play-bar { transform: translateY(-72px); }
+/* On smaller phones the card spans nearly full width — push play-bar higher */
+@media (max-width: 600px) {
+  body.card-open .play-bar { transform: translateY(-58px); }
 }
 .play-btn {
   width: 46px; height: 46px;
@@ -597,9 +604,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   transform: translateX(-50%) translateY(0);
 }
 @media (max-width: 600px) {
-  .play-bar { bottom: 14px; padding: 6px 10px; gap: 8px; }
+  .play-bar { bottom: 14px; left: 14px; padding: 6px 8px; gap: 6px; }
   .play-btn { width: 42px; height: 42px; font-size: 16px; }
-  .play-status { font-size: 10px; }
+  .play-status { display: none; }
 }
 
 </style>
@@ -1108,13 +1115,19 @@ function startAnim() {
   const days = DAY_LIST.map(d => ({ day: d, pts: dayPointsFor(d) })).filter(x => x.pts.length >= 1);
   if (!days.length) { status.textContent = '데이터 없음'; return; }
 
-  // Moving dot at day 1 start
+  // Moving dot at day 1 start — plain HTML so inline style always survives
   const startPt = days[0].pts[0];
-  const dotEl = document.createElement('div');
-  dotEl.className = 'moving-dot';
-  dotEl.style.background = DAY_COLORS[days[0].day];
-  const dotIcon = L.divIcon({ className: 'moving-wrap', html: dotEl.outerHTML, iconSize: [22, 22], iconAnchor: [11, 11] });
-  const dotMarker = L.marker([startPt.lat, startPt.lng], { icon: dotIcon, zIndexOffset: 2000, interactive: false }).addTo(map);
+  function dotIconFor(color) {
+    return L.divIcon({
+      className: 'moving-wrap',
+      html: '<div class="moving-dot" style="background:' + color + '"></div>',
+      iconSize: [28, 28], iconAnchor: [14, 14]
+    });
+  }
+  const dotMarker = L.marker([startPt.lat, startPt.lng], {
+    icon: dotIconFor(DAY_COLORS[days[0].day]),
+    zIndexOffset: 2000, interactive: false
+  }).addTo(map);
 
   const DAY_MS = 5000;         // each day takes ~5s of air-time
   const DAY_GAP_MS = 600;      // pause between days
@@ -1139,9 +1152,14 @@ function startAnim() {
     }
   };
 
-  function setDotEmoji(color) {
-    const live = document.querySelector('.moving-wrap .moving-dot');
-    if (live) setMovingDotColor(live, color);
+  function setDotColor(color) {
+    // Recreate the icon (most reliable — survives Leaflet re-renders).
+    dotMarker.setIcon(dotIconFor(color));
+    // Add a brief pulse on the freshly rendered element
+    requestAnimationFrame(() => {
+      const live = document.querySelector('.moving-wrap .moving-dot');
+      if (live) setMovingDotColor(live, color);
+    });
   }
 
   function tween(from, to, ms) {
@@ -1166,7 +1184,9 @@ function startAnim() {
       if (cancelled) break;
       const { day, pts } = days[di];
       showDayStage(day);
-      setDotEmoji(DAY_COLORS[day]);
+      setDotColor(DAY_COLORS[day]);
+      // Teleport dot to this day's first point (between-day jump is intentional)
+      dotMarker.setLatLng([pts[0].lat, pts[0].lng]);
       // Fit to this day's bounds for clarity
       if (pts.length >= 2) {
         map.flyToBounds(pts.map(p => [p.lat, p.lng]), { padding: [80, 80], duration: 0.5 });
@@ -1179,7 +1199,7 @@ function startAnim() {
       const hopMs = DAY_MS / hops;
       for (let i = 0; i < pts.length - 1; i++) {
         if (cancelled) break;
-        status.textContent = `Day ${day} · ${pts[i].label} → ${pts[i+1].label}`;
+        status.textContent = 'Day ' + day + ' · ' + pts[i].label + ' → ' + pts[i+1].label;
         await tween(pts[i], pts[i+1], hopMs);
       }
       if (!cancelled) await new Promise(r => setTimeout(r, DAY_GAP_MS));
@@ -1194,6 +1214,15 @@ function startAnim() {
 document.getElementById('playBtn').addEventListener('click', () => {
   if (_anim) _anim.cancel(); else startAnim();
 });
+
+// Mirror stop-card visibility on <body> so .play-bar can lift via CSS
+(function watchCard() {
+  const card = document.getElementById('stopCard');
+  if (!card) return;
+  const sync = () => document.body.classList.toggle('card-open', !card.classList.contains('hide'));
+  new MutationObserver(sync).observe(card, { attributes: true, attributeFilter: ['class'] });
+  sync();
+})();
 
 })();
 </script>
