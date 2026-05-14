@@ -171,7 +171,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 }
 .stop-card.hide {
   opacity: 0;
-  transform: translateX(-50%) translateY(60px);
+  transform: translateX(-50%) translateY(100px);
   pointer-events: none;
 }
 /* Minimized = slide down so only header peek visible.
@@ -228,27 +228,42 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   background: var(--tierA);
 }
 
-.card-toggle {
+/* macOS-style window controls — top-left */
+.window-controls {
   position: absolute;
-  top: 30px;
-  right: 12px;
-  width: 36px;
-  height: 36px;
+  top: 14px;
+  left: 14px;
+  display: flex;
+  gap: 8px;
+  z-index: 3;
+  -webkit-tap-highlight-color: transparent;
+}
+.wc-btn {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
   border: none;
-  background: transparent;
-  font-size: 16px;
+  padding: 0;
   cursor: pointer;
-  opacity: 0.55;
-  border-radius: 8px;
-  transition: opacity .2s ease, background .2s ease;
-  color: var(--ink);
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
-  -webkit-tap-highlight-color: transparent;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(0,0,0,0);
+  transition: color .15s ease, filter .15s ease, transform .15s ease;
+  box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.18);
 }
-.card-toggle:hover, .card-toggle:active { opacity: 1; background: rgba(0,0,0,0.08); }
+.wc-close { background: #ff5f57; }
+.wc-min   { background: #ffbd2e; }
+.window-controls:hover .wc-btn { color: rgba(0,0,0,0.55); }
+.wc-btn:active { transform: scale(0.9); filter: brightness(0.85); }
+@media (max-width: 600px) {
+  .wc-btn { width: 15px; height: 15px; font-size: 10px; }
+  .window-controls { top: 12px; left: 14px; gap: 9px; }
+}
 .card-img {
   width: 100%;
   max-height: 180px;
@@ -490,7 +505,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   .stop-card.minimized .drag-handle::before { width: 64px; }
   .card-icon { width: 38px; height: 38px; font-size: 20px; }
   .card-name { font-size: 14px; }
-  .card-toggle { width: 40px; height: 40px; font-size: 18px; top: 30px; right: 8px; }
   .disclaimer { display: none; }
 }
 </style>
@@ -535,8 +549,11 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
 
 <!-- Stop info card -->
 <div class="stop-card glass hide" id="stopCard">
+  <div class="window-controls">
+    <button class="wc-btn wc-close" id="wcClose" aria-label="Close">×</button>
+    <button class="wc-btn wc-min"   id="wcMin"   aria-label="Minimize">−</button>
+  </div>
   <div class="drag-handle"></div>
-  <button class="card-toggle" id="cardToggle" aria-label="Minimize">▾</button>
   <img class="card-img" id="cardImg" alt="">
   <div class="card-header">
     <div class="card-icon" id="cardIcon">📍</div>
@@ -606,17 +623,23 @@ for (let i = 0; i < A_ORDER.length - 1; i++) {
 
 const cardEl = document.getElementById('stopCard');
 const cardImg = document.getElementById('cardImg');
-const toggleBtn = document.getElementById('cardToggle');
+const wcClose = document.getElementById('wcClose');
+const wcMin = document.getElementById('wcMin');
 const dragHandle = cardEl.querySelector('.drag-handle');
 
 function setMinimized(min) {
   cardEl.classList.toggle('minimized', min);
-  toggleBtn.textContent = min ? '▴' : '▾';
-  toggleBtn.setAttribute('aria-label', min ? 'Expand' : 'Minimize');
 }
 
-// Toggle button (tap)
-toggleBtn.addEventListener('click', e => {
+function closeCard() {
+  cardEl.classList.add('hide');
+  setMinimized(false);
+  // clear active marker highlight
+  document.querySelectorAll('.stop-marker.active').forEach(el => el.classList.remove('active'));
+}
+
+wcClose.addEventListener('click', e => { e.stopPropagation(); closeCard(); });
+wcMin.addEventListener('click', e => {
   e.stopPropagation();
   setMinimized(!cardEl.classList.contains('minimized'));
 });
@@ -730,8 +753,11 @@ function focusStop(slug) {
     cardEl.style.transform = '';
   }
 
-  cardEl.classList.add('hide');
+  const wasHidden = cardEl.classList.contains('hide');
   setMinimized(false);  // always expand when new stop focused
+  // Hidden → just slide up. Visible → swap content in place after tiny fade so transition feels intentional.
+  if (!wasHidden) cardEl.classList.add('hide');
+  const swapDelay = wasHidden ? 30 : 180;
   setTimeout(() => {
     // Image
     if (stop.imageDataUrl) {
@@ -835,7 +861,7 @@ function focusStop(slug) {
     }
 
     cardEl.classList.remove('hide');
-  }, 180);
+  }, swapDelay);
 
   map.flyTo([stop.lat, stop.lng], Math.max(map.getZoom(), 14), { duration: 0.7 });
   document.querySelectorAll('.stop-marker').forEach(el => {
