@@ -1947,6 +1947,8 @@ const anim = {
     if (pos && movingMarker) {
       movingMarker.setLatLng(pos);
       this._spawnTrail(pos);
+      // Camera follows the dot every frame (instant pan, no fight with tick rate)
+      map.panTo(pos, { animate: false });
     }
   },
   _spawnTrail(pos) {
@@ -1969,15 +1971,16 @@ const anim = {
     if (live) live.textContent = transportIcon(seg.transport);
     this._updateRouteVisuals();
     this._updateProgressBar();
-    // Camera flyTo with adaptive zoom
+    // Camera follows the dot during the segment — pick a zoom level by distance
+    // and snap to the start point. _updatePosition() then keeps it centered.
     const dist = map.distance(seg.points[0], seg.points[1]);
-    if (dist > 14000) {
-      map.flyToBounds(L.latLngBounds(seg.points).pad(0.4), { duration: 0.9 });
-    } else if (dist < 1200) {
-      map.flyTo(seg.points[0], 15, { duration: 0.7 });
-    } else {
-      map.flyToBounds(L.latLngBounds(seg.points).pad(0.5), { duration: 0.75 });
-    }
+    let zoom;
+    if (dist > 14000)     zoom = 11;
+    else if (dist > 5000) zoom = 12;
+    else if (dist > 2000) zoom = 13;
+    else if (dist > 800)  zoom = 14;
+    else                  zoom = 15;
+    map.setView(seg.points[0], zoom, { animate: true, duration: 0.5 });
   },
   _updateRouteVisuals() {
     segments.forEach((s, i) => {
