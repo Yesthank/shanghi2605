@@ -1376,6 +1376,8 @@ function hideCenterInfo() { document.getElementById('centerInfo').classList.remo
 const anim = {
   currentSegment: 0,
   progress: 0,
+  dwellRemaining: 0,       // ms left in current dwell (0 = moving). Decremented by tick.
+  _dwellStop: null,        // ROUTE index of the stop we're dwelling at
   isPlaying: false,
   pausedByUser: false,     // sticky pause-intent across dwell/day-transition callbacks
   speed: 1,
@@ -1406,20 +1408,21 @@ const anim = {
       this.hasStarted = true;
       this._snapshotCard();
       hideTransit(); hideCenterInfo();
-      this._showDayTransition(ROUTE[0].day, () => {
-        if (this.pausedByUser) return;
-        showCenterInfo(0);
-        const self = this;
-        setTimeout(function () {
-          if (self.pausedByUser) return;
-          hideCenterInfo();
-          self._enterSegment(0);
-          self._startTicking();
-        }, 1400 / this.speed);
+      this.currentSegment = 0;
+      this.progress = 0;
+      const self = this;
+      this._showDayTransition(ROUTE[0].day, function () {
+        if (self.pausedByUser) return;
+        self._beginDwell(segments[0].fromStop);   // intro dwell at starting stop
+        self._startTicking();
       });
       return;
     }
-    // Mid-trip resume — no snapshot needed (already taken)
+    // Mid-trip resume. Edge: paused before any dwell ever started (during initial overlay).
+    if (this.dwellRemaining === 0 && this.progress === 0) {
+      const seg = segments[this.currentSegment];
+      if (seg) this._beginDwell(seg.fromStop);
+    }
     this._startTicking();
   },
   _startTicking() {
@@ -1458,6 +1461,8 @@ const anim = {
     document.body.classList.remove('anim-on');
     this.currentSegment = 0;
     this.progress = 0;
+    this.dwellRemaining = 0;
+    this._dwellStop = null;
     this.hasStarted = false;
     this._updateProgressBar();
   },
@@ -1469,7 +1474,6 @@ const anim = {
   },
   _segmentDuration(idx) {
     const seg = segments[idx]; if (!seg) return 1200;
-    // travelMin → ms, with mode-specific min for visibility
     let base = (seg.travelMin || 5) * 90;
     if (seg.transport === 'walk') base = Math.max(base, 700);
     else if (seg.transport.indexOf('metro') !== -1) base = Math.max(base, 1200);
@@ -1479,19 +1483,93 @@ const anim = {
     else base = Math.max(base, 900);
     return base;
   },
+  _dwellDurationFor(stopIdx) {
+    // durationMin (planned minutes) compresses to anim ms; default 2200.
+    const r = ROUTE[stopIdx];
+    if (r && r.durationMin) return Math.max(2000, Math.min(5000, r.durationMin * 30));
+    return 2200;
+  },
+  _beginDwell(stopIdx) {
+    // Begin "we are at this stop" phase. Center info visible, marker stationary.
+    // tick() counts dwellRemaining down — pause/stop affect it like motion.
+    this._dwellStop = stopIdx;
+    hideTransit();
+    showCenterInfo(stopIdx);
+    this.dwellRemaining = this._dwellDurationFor(stopIdx);
+  },
+  _endDwell() {
+    // Called by tick when dwellRemaining hits 0. Decides next phase.
+    const stopIdx = this._dwellStop;
+    this._dwellStop = null;
+    const seg = segments[this.currentSegment];
+    if (!seg) { this._pauseSilent(); return; }
+
+    if (stopIdx === seg.fromStop) {
+      // Dwelled at segment start — begin moving along it
+      hideCenterInfo();
+      this._enterSegment(this.currentSegment);
+      return;
+    }
+    // stopIdx === seg.toStop — arrival. Advance to next.
+    const nextIdx = this.currentSegment + 1;
+    if (nextIdx >= segments.length) {
+      // End of trip — let the center card linger, then auto-stop
+      this._pauseSilent();
+      const self = this;
+      setTimeout(function () { self.stop(); }, 3000);
+      return;
+    }
+    const nextSeg = segments[nextIdx];
+    if (seg.day !== nextSeg.day) {
+      // Day transition: full-screen overlay, then morning dwell at new day's first stop
+      hideCenterInfo();
+      this.currentSegment = nextIdx;
+      this.progress = 0;
+      if (movingMarker) movingMarker.setLatLng(nextSeg.points[0]);
+      this._pauseSilent();
+      const self = this;
+      this._showDayTransition(nextSeg.day, function () {
+        if (self.pausedByUser) return;
+        self._beginDwell(nextSeg.fromStop);
+        self._startTicking();
+      });
+      return;
+    }
+    // Same-day advance
+    hideCenterInfo();
+    this.currentSegment = nextIdx;
+    this.progress = 0;
+    this._enterSegment(nextIdx);
+  },
   tick(timestamp) {
     if (!this.isPlaying) return;
     if (!this.lastTimestamp) this.lastTimestamp = timestamp;
-    const delta = timestamp - this.lastTimestamp;
+    const dt = (timestamp - this.lastTimestamp) * this.speed;
     this.lastTimestamp = timestamp;
+
+    // ── DWELL PHASE — center info visible, marker stationary, time counts down
+    if (this.dwellRemaining > 0) {
+      this.dwellRemaining -= dt;
+      if (this.dwellRemaining <= 0) {
+        this.dwellRemaining = 0;
+        this._endDwell();
+        if (!this.isPlaying) return;   // day-transition or end-of-trip paused ticking
+      }
+      requestAnimationFrame(t => this.tick(t));
+      return;
+    }
+
+    // ── MOVING PHASE — interpolate marker along current segment
     const seg = segments[this.currentSegment];
-    if (!seg) { this.pause(); return; }
+    if (!seg) { this._pauseSilent(); return; }
     const duration = this._segmentDuration(this.currentSegment);
-    this.progress += (delta * this.speed) / duration;
+    this.progress += dt / duration;
     if (this.progress >= 1) {
       this.progress = 1;
       this._updatePosition();
-      this._onSegmentComplete();
+      if (seg.polyline) seg.polyline.setStyle({ opacity: 0.7 });
+      this._beginDwell(seg.toStop);     // arrival → dwell at destination
+      requestAnimationFrame(t => this.tick(t));
       return;
     }
     this._updatePosition();
@@ -1524,47 +1602,7 @@ const anim = {
     this.trailTimers.push(t);
     while (this.trailTimers.length > 60) clearTimeout(this.trailTimers.shift());
   },
-  _onSegmentComplete() {
-    const seg = segments[this.currentSegment];
-    if (seg && seg.polyline) seg.polyline.setStyle({ opacity: 0.7 });
-    const nextIdx = this.currentSegment + 1;
-    if (nextIdx >= segments.length) {
-      // End of trip — final stop info, then auto-stop (full reset)
-      this._pauseSilent();
-      hideTransit();
-      showCenterInfo(ROUTE.length - 1);
-      this._updateProgressBar();
-      const self = this;
-      setTimeout(function () { self.stop(); }, 3500 / Math.max(1, self.speed * 0.5));
-      return;
-    }
-    const curDay = segments[this.currentSegment].day;
-    const nextDay = segments[nextIdx].day;
-    if (curDay !== nextDay) {
-      this._pauseSilent();
-      this._dwell(seg.toStop, () => {
-        if (this.pausedByUser) return;
-        this.currentSegment = nextIdx; this.progress = 0;
-        this._showDayTransition(nextDay, () => {
-          if (this.pausedByUser) return;
-          this._enterSegment(nextIdx); this._startTicking();
-        });
-      });
-      return;
-    }
-    this._dwell(seg.toStop, () => {
-      if (this.pausedByUser) return;
-      this.currentSegment = nextIdx; this.progress = 0;
-      this._enterSegment(nextIdx); this._startTicking();
-    });
-  },
-  _dwell(arrivedStopIdx, callback) {
-    const ms = 1800 / this.speed;
-    this._pauseSilent();
-    hideTransit();
-    showCenterInfo(arrivedStopIdx);
-    setTimeout(callback, ms);   // callback guards pausedByUser
-  },
+  // (_onSegmentComplete and _dwell removed — replaced by tick + _beginDwell + _endDwell)
   _enterSegment(idx) {
     const seg = segments[idx]; if (!seg) return;
     hideCenterInfo();
@@ -1622,37 +1660,47 @@ const anim = {
   },
   nextStop() {
     if (this.transitioning) return;
-    const next = this.currentSegment + 1;
-    if (next >= segments.length) return;
-    if (segments[this.currentSegment] && segments[this.currentSegment].polyline)
+    const nextIdx = this.currentSegment + 1;
+    if (nextIdx >= segments.length) return;
+    if (segments[this.currentSegment].polyline)
       segments[this.currentSegment].polyline.setStyle({ opacity: 0.7 });
     const wasPlaying = this.isPlaying;
     this._pauseSilent();
     const curDay = segments[this.currentSegment].day;
-    const nextDay = segments[next].day;
-    this.currentSegment = next; this.progress = 0;
-    const after = () => {
-      this._enterSegment(next);
-      if (movingMarker) movingMarker.setLatLng(segments[next].points[0]);
-      if (wasPlaying) this._startTicking();
+    const newDay = segments[nextIdx].day;
+    this.currentSegment = nextIdx;
+    this.progress = 0;
+    this.dwellRemaining = 0;
+    if (movingMarker) movingMarker.setLatLng(segments[nextIdx].points[0]);
+    const self = this;
+    const after = function () {
+      if (self.pausedByUser) return;
+      self._beginDwell(segments[nextIdx].fromStop);   // dwell at next stop
+      if (wasPlaying) self._startTicking();
     };
-    if (curDay !== nextDay) this._showDayTransition(nextDay, after); else after();
+    if (curDay !== newDay) this._showDayTransition(newDay, after); else after();
   },
   prevStop() {
     if (this.transitioning) return;
-    if (this.currentSegment <= 0) return;
     const prev = this.currentSegment - 1;
-    if (segments[this.currentSegment] && segments[this.currentSegment].polyline)
-      segments[this.currentSegment].polyline.setStyle({ opacity: 0.22 });
+    if (prev < 0) return;
+    // Reset current and future to "not yet"
+    for (let i = this.currentSegment; i < segments.length; i++) {
+      if (segments[i].polyline) segments[i].polyline.setStyle({ opacity: 0.22 });
+    }
     const wasPlaying = this.isPlaying;
     this._pauseSilent();
     const curDay = segments[this.currentSegment].day;
     const prevDay = segments[prev].day;
-    this.currentSegment = prev; this.progress = 0;
-    const after = () => {
-      this._enterSegment(prev);
-      if (movingMarker) movingMarker.setLatLng(segments[prev].points[0]);
-      if (wasPlaying) this._startTicking();
+    this.currentSegment = prev;
+    this.progress = 0;
+    this.dwellRemaining = 0;
+    if (movingMarker) movingMarker.setLatLng(segments[prev].points[0]);
+    const self = this;
+    const after = function () {
+      if (self.pausedByUser) return;
+      self._beginDwell(segments[prev].fromStop);
+      if (wasPlaying) self._startTicking();
     };
     if (curDay !== prevDay) this._showDayTransition(prevDay, after); else after();
   },
@@ -1670,9 +1718,11 @@ const anim = {
     });
     this.currentSegment = segIdx;
     this.progress = prog;
-    if (!this.hasStarted) this._snapshotCard();   // seeking starts the trip
+    this.dwellRemaining = 0;
+    if (!this.hasStarted) this._snapshotCard();
     this.hasStarted = true;
-    this._enterSegment(segIdx);
+    hideCenterInfo();
+    this._enterSegment(segIdx);     // mid-segment seek lands in moving phase
     this._updatePosition();
     this._updateProgressBar();
     document.body.classList.add('anim-on');
