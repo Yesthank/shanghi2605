@@ -682,7 +682,9 @@ body.card-open .control-bar { opacity: 0; pointer-events: none; }
   transform: translateX(-50%) translateY(0);
 }
 
-/* Moving marker (transport emoji) */
+/* Moving marker (transport emoji) — hidden until animation starts */
+.moving-wrap { opacity: 0; transition: opacity .3s ease; }
+body.anim-on .moving-wrap { opacity: 1; }
 .moving-marker {
   font-size: 26px;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
@@ -1229,14 +1231,11 @@ function makeMovingIcon(emoji) {
 }
 const movingMarker = ROUTE.length
   ? L.marker([ROUTE[0].lat, ROUTE[0].lng], {
-      icon: makeMovingIcon(transportIcon(ROUTE[1] ? ROUTE[1].travelMode : null) || ROUTE[0].icon),
+      icon: makeMovingIcon(transportIcon(ROUTE[1] ? ROUTE[1].travelMode : null)),
       zIndexOffset: 2000, interactive: false
     }).addTo(map)
   : null;
-if (movingMarker) {
-  // Hide initially until anim starts
-  movingMarker.getElement().style.opacity = '0';
-}
+// Visibility is controlled via body.anim-on CSS class (avoids race with marker DOM insertion).
 
 // Helper: show the now-playing badge
 function showNowPlaying(stopIdx) {
@@ -1279,7 +1278,7 @@ const anim = {
     this.lastTimestamp = null;
     document.getElementById('playBtn').textContent = '⏸';
     document.getElementById('playBtn').setAttribute('aria-label', 'Pause');
-    if (movingMarker) movingMarker.getElement().style.opacity = '1';
+    document.body.classList.add('anim-on');
     requestAnimationFrame(t => this.tick(t));
   },
   pause() {
@@ -1491,7 +1490,7 @@ const anim = {
     this._enterSegment(segIdx);
     this._updatePosition();
     this._updateProgressBar();
-    if (movingMarker) movingMarker.getElement().style.opacity = '1';
+    document.body.classList.add('anim-on');
     if (wasPlaying) setTimeout(() => this._startTicking(), 100);
   },
 };
