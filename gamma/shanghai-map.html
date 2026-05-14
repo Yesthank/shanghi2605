@@ -512,101 +512,195 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: var(--fon
   .disclaimer { display: none; }
 }
 
-/* ── Gamma: Day chips · Play button · Animation ── */
+/* ── Gamma: day chips · control bar · day overlay · moving marker ── */
 .filter-panel button[data-filter^="day-"].active { color: #fff; }
 .filter-panel button[data-filter="day-1"].active { background: var(--day1); }
 .filter-panel button[data-filter="day-2"].active { background: var(--day2); }
 .filter-panel button[data-filter="day-3"].active { background: var(--day3); }
 .filter-panel button[data-filter="day-4"].active { background: var(--day4); }
 .filter-panel .chip-divider {
-  width: 1px; height: 22px; background: rgba(0,0,0,0.12); margin: 0 4px;
-  align-self: center;
+  height: 1px;
+  background: rgba(0,0,0,0.12);
+  margin: 4px 6px;
+  align-self: stretch;
 }
-.play-bar {
+
+/* Stop-card lifted so control-bar (bottom: 20px) doesn't overlap */
+.stop-card { bottom: 90px; }
+.stop-card.minimized { transform: translateX(-50%) translateY(calc(100% - 64px)); }
+
+/* Control bar (bottom center) */
+.control-bar {
   position: fixed;
-  bottom: 24px; left: 24px;
-  z-index: 999;
-  display: flex; align-items: center; gap: 12px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  pointer-events: auto;
-  transition: transform .3s cubic-bezier(.2,.85,.2,1);
-}
-/* When stop-card is visible, lift play-bar above its minimized header */
-body.card-open .play-bar { transform: translateY(-72px); }
-/* On smaller phones the card spans nearly full width — push play-bar higher */
-@media (max-width: 600px) {
-  body.card-open .play-bar { transform: translateY(-58px); }
-}
-.play-btn {
-  width: 46px; height: 46px;
-  border-radius: 50%;
-  border: none;
-  background: var(--ink);
-  color: #fff;
-  font-size: 18px;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: transform .2s ease, background .2s ease;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1001;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 480px;
+  width: calc(100% - 32px);
+  transition: opacity .35s ease;
   -webkit-tap-highlight-color: transparent;
 }
-.play-btn:hover { transform: scale(1.06); }
-.play-btn.playing { background: var(--tierA); }
-.play-status {
+body.card-open .control-bar { opacity: 0; pointer-events: none; }
+.ctrl-btn {
+  width: 36px; height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s ease, transform .15s ease;
+  color: var(--ink);
+  flex-shrink: 0;
+  font-family: inherit;
+}
+.ctrl-btn:hover { background: rgba(0,0,0,0.06); }
+.ctrl-btn:active { transform: scale(0.94); }
+.ctrl-btn.play-btn { width: 42px; height: 42px; font-size: 20px; }
+.progress-wrap {
+  flex: 1;
+  height: 6px;
+  background: rgba(0,0,0,0.08);
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  min-width: 60px;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--day1);
+  transition: width .15s linear, background .4s ease;
+  position: relative;
+  color: var(--day1);
+}
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  right: -5px; top: -4px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid currentColor;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.speed-btn {
+  padding: 4px 9px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
   font-family: var(--font-mono);
   font-size: 11px;
-  opacity: 0.75;
-  min-width: 60px;
-  white-space: nowrap;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s ease;
+  color: var(--ink);
+  opacity: 0.5;
+  flex-shrink: 0;
 }
-.moving-dot {
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  border: 3px solid #fff;
-  box-shadow: 0 0 0 2px rgba(0,0,0,0.25), 0 4px 14px rgba(0,0,0,0.35);
-  transition: background-color .35s ease;
-  pointer-events: none;
-}
-.day-pulse {
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 32px; height: 32px;
-  margin: -16px 0 0 -16px;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.55;
-  animation: dayPulse .9s ease-out forwards;
-  pointer-events: none;
-}
-@keyframes dayPulse {
-  to { transform: scale(2.4); opacity: 0; }
-}
-.day-stage {
+.speed-btn.active { opacity: 1; background: rgba(0,0,0,0.08); }
+.speed-btn:hover { opacity: 0.9; }
+
+/* Full-screen day transition overlay */
+.day-overlay {
   position: fixed;
-  top: 16px; left: 50%; transform: translateX(-50%);
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(28,31,46,0);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  pointer-events: none;
+  transition: background .5s ease, backdrop-filter .5s ease, -webkit-backdrop-filter .5s ease;
+}
+.day-overlay.show {
+  pointer-events: auto;
+  background: rgba(28,31,46,0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.day-overlay-content { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.day-overlay-num {
+  font-family: var(--font-serif);
+  font-size: 4rem;
+  font-weight: 800;
+  color: var(--day1);
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all .45s cubic-bezier(.4,0,.2,1);
+}
+.day-overlay.show .day-overlay-num { opacity: 1; transform: scale(1); transition-delay: .12s; }
+.day-overlay-date {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  color: #fff;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: all .4s ease;
+}
+.day-overlay.show .day-overlay-date { opacity: 1; transform: translateY(0); transition-delay: .32s; }
+.day-overlay-sub {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.65);
+  opacity: 0;
+  transition: opacity .4s ease;
+}
+.day-overlay.show .day-overlay-sub { opacity: 1; transition-delay: .5s; }
+
+/* Now-playing slim badge (top-center) — visible during animation */
+.now-playing {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-60px);
   z-index: 1100;
-  padding: 8px 18px;
+  padding: 8px 16px;
   border-radius: 999px;
   font-family: var(--font-serif);
+  font-size: 13px;
   font-weight: 700;
-  font-size: 14px;
-  letter-spacing: 1px;
+  background: rgba(44,44,44,0.92);
   color: #fff;
-  background: rgba(44,44,44,0.85);
+  white-space: nowrap;
   opacity: 0;
-  transform: translateX(-50%) translateY(-10px);
-  transition: opacity .35s ease, transform .35s ease;
+  transition: opacity .35s ease, transform .35s ease, background .35s ease;
   pointer-events: none;
+  max-width: calc(100vw - 380px);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.day-stage.show {
+.now-playing.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* Moving marker (transport emoji) */
+.moving-marker {
+  font-size: 26px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+  text-align: center;
+  line-height: 1;
+  pointer-events: none;
+  transition: none;
+}
+
+/* Mobile */
 @media (max-width: 600px) {
-  .play-bar { bottom: 14px; left: 14px; padding: 6px 8px; gap: 6px; }
-  .play-btn { width: 42px; height: 42px; font-size: 16px; }
-  .play-status { display: none; }
+  .control-bar { bottom: 14px; padding: 8px 10px; gap: 6px; }
+  .ctrl-btn { width: 34px; height: 34px; font-size: 15px; }
+  .ctrl-btn.play-btn { width: 40px; height: 40px; font-size: 18px; }
+  .speed-btn { padding: 4px 7px; font-size: 10px; }
+  .stop-card { bottom: 82px; }
+  .day-overlay-num { font-size: 3rem; }
+  .now-playing { font-size: 11px; padding: 6px 12px; max-width: calc(100vw - 32px); }
 }
 
 </style>
@@ -638,7 +732,7 @@ body.card-open .play-bar { transform: translateY(-72px); }
 
 <!-- Disclaimer -->
 <div class="disclaimer">
-  γ · 추천 강도순 + 일정 모드 (Day chips / ▶ Play)<br>
+  γ · Day 필터 + ▶ 일정 애니메이션 (Space/←/→ 단축키)<br>
   좌표 일부 추정 ±150m (GCJ-02 offset)<br>
   영상 출처 ▶ 클릭 = YouTube 해당 발화 시점으로 이동
 </div>
@@ -699,6 +793,20 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 const ITINERARY = [{"day": 1, "startTime": "13:10", "endTime": null, "slug": "hongqiao_airport", "nameKr": "상하이 홍차오 국제공항", "category": "airport", "durationMin": null, "travelFromPrev": null, "travelMin": null, "travelMode": null, "notes": "도착. 원본 stops 데이터에 추가 필요"}, {"day": 1, "startTime": null, "endTime": null, "slug": "hotel", "nameKr": "Atour Light 호텔", "category": "hotel", "durationMin": null, "travelFromPrev": "hongqiao_airport", "travelMin": 30, "travelMode": "robotaxi", "notes": "체크인. 로보택시 약 30분 (사용자 지정)"}, {"day": 1, "startTime": "15:00", "endTime": null, "slug": "xintiandi", "nameKr": "신톈디", "category": "landmark", "durationMin": 60, "travelFromPrev": "hotel", "travelMin": 17, "travelMode": "walk", "notes": "오후 일정 시작"}, {"day": 1, "startTime": null, "endTime": null, "slug": "kprov", "nameKr": "대한민국 임시정부 청사", "category": "landmark", "durationMin": 45, "travelFromPrev": "xintiandi", "travelMin": 5, "travelMode": "walk", "notes": "신톈디에서 도보 5분"}, {"day": 1, "startTime": null, "endTime": "17:00", "slug": null, "nameKr": "저녁 (미정)", "category": "meal", "durationMin": null, "travelFromPrev": null, "travelMin": null, "travelMode": null, "notes": "저녁 식당 추후 결정"}, {"day": 1, "startTime": "19:00", "endTime": null, "slug": "nanjing_rd", "nameKr": "난징동루", "category": "landmark", "durationMin": 60, "travelFromPrev": "kprov", "travelMin": 18, "travelMode": "walk", "notes": "쇼핑 거리. 와이탄까지 일직선"}, {"day": 1, "startTime": null, "endTime": null, "slug": "bund", "nameKr": "와이탄", "category": "landmark", "durationMin": 60, "travelFromPrev": "nanjing_rd", "travelMin": 15, "travelMode": "walk", "notes": "야경 핵심 스팟"}, {"day": 1, "startTime": null, "endTime": null, "slug": "pearl", "nameKr": "동방명주", "category": "landmark", "durationMin": 60, "travelFromPrev": "bund", "travelMin": 15, "travelMode": "ferry/metro", "notes": "황푸강 건너 — 외탄관광터널 or 지하철 2호선"}, {"day": 1, "startTime": null, "endTime": null, "slug": "hotel", "nameKr": "Atour Light 호텔", "category": "hotel", "durationMin": null, "travelFromPrev": "pearl", "travelMin": 20, "travelMode": "metro", "notes": "늦게 숙소 복귀 (2호선 People's Sq 환승)"}, {"day": 2, "startTime": null, "endTime": null, "slug": null, "nameKr": "오전 일정 (미정)", "category": "", "durationMin": null, "travelFromPrev": null, "travelMin": null, "travelMode": null, "notes": "추후 입력"}, {"day": 2, "startTime": "18:00", "endTime": null, "slug": "luxun_park", "nameKr": "루쉰공원 / 매헌 기념관", "category": "landmark", "durationMin": 90, "travelFromPrev": "hotel", "travelMin": 30, "travelMode": "metro", "notes": "지하철 8호선 → Hongkou Football Stadium"}, {"day": 2, "startTime": "19:30", "endTime": null, "slug": "circus_world", "nameKr": "상하이 서커스 월드", "category": "landmark", "durationMin": 120, "travelFromPrev": "luxun_park", "travelMin": 25, "travelMode": "bus/metro", "notes": "쇼 관람 (예약 권장)"}, {"day": 2, "startTime": null, "endTime": null, "slug": "hotel", "nameKr": "Atour Light 호텔", "category": "hotel", "durationMin": null, "travelFromPrev": "circus_world", "travelMin": 35, "travelMode": "metro", "notes": "숙소 복귀"}, {"day": 3, "startTime": null, "endTime": null, "slug": null, "nameKr": "오전 쇼핑 (장소 미정)", "category": "shopping", "durationMin": null, "travelFromPrev": null, "travelMin": null, "travelMode": null, "notes": "장소·시간 추후 입력"}, {"day": 3, "startTime": "13:00", "endTime": null, "slug": "renmin_sq", "nameKr": "인민광장", "category": "landmark", "durationMin": null, "travelFromPrev": "hotel", "travelMin": 7, "travelMode": "walk", "notes": "출발 거점 (호텔 도보 5–7분)"}, {"day": 3, "startTime": null, "endTime": null, "slug": "panlong", "nameKr": "판롱티엔디 — 신축 수향마을", "category": "landmark", "durationMin": 300, "travelFromPrev": "renmin_sq", "travelMin": 90, "travelMode": "bus", "notes": "버스 약 1.5시간 (투어 형식)"}, {"day": 3, "startTime": null, "endTime": "21:00", "slug": "hotel", "nameKr": "Atour Light 호텔", "category": "hotel", "durationMin": null, "travelFromPrev": "panlong", "travelMin": 90, "travelMode": "bus", "notes": "숙소 복귀"}, {"day": 4, "startTime": null, "endTime": "08:00", "slug": "hongqiao_airport", "nameKr": "상하이 홍차오 국제공항", "category": "airport", "durationMin": null, "travelFromPrev": "hotel", "travelMin": 40, "travelMode": "taxi", "notes": "출국. 새벽 04:30 체크아웃 (호텔 정보 기준)"}];
 const DAY_COLORS = {1:'#d64545', 2:'#c4993e', 3:'#3a7a4a', 4:'#7b3a8a'};
+const DAY_INFO = {
+  1: {date:'5월 22일 목요일', sub:'도착 → 외탄·푸둥 야경'},
+  2: {date:'5월 23일 금요일', sub:'루쉰공원·서커스'},
+  3: {date:'5월 24일 토요일', sub:'쇼핑 → 판롱티엔디'},
+  4: {date:'5월 25일 일요일', sub:'출국 (PVG 04:30 CO)'}
+};
+const TRANSPORT_ICONS = { walk:'🚶', metro:'🚇', bus:'🚌', taxi:'🚕', robotaxi:'🤖', flight:'✈️' };
+function transportIcon(mode) {
+  if (!mode) return '🚶';
+  if (mode.indexOf('ferry') !== -1) return '⛴️';
+  if (mode.indexOf('metro') !== -1) return '🚇';
+  if (mode.indexOf('bus') !== -1) return '🚌';
+  return TRANSPORT_ICONS[mode] || '🚶';
+}
 const DAY_LIST = [1, 2, 3, 4];
 
 const markers = {};
@@ -980,48 +1088,19 @@ function focusStop(slug) {
   });
 }
 
-// Gamma: day-aware filter — Day N click shows only that day's stops + day polyline
+// Gamma: day-aware filter
 function daySlugsFor(day) {
   return new Set(ITINERARY.filter(r => r.day === day && r.slug).map(r => r.slug));
 }
-function dayPointsFor(day) {
-  return ITINERARY
-    .filter(r => r.day === day && r.slug)
-    .map(r => {
-      const s = STOPS.find(x => x.slug === r.slug);
-      return s ? { slug: r.slug, lat: s.lat, lng: s.lng, label: s.nameKr, transport: r.travelMode } : null;
-    })
-    .filter(Boolean);
-}
-
-// Pre-build per-day polylines (drawn on demand)
-const dayPolylines = {1: [], 2: [], 3: [], 4: []};
-DAY_LIST.forEach(d => {
-  const pts = dayPointsFor(d);
-  for (let i = 0; i < pts.length - 1; i++) {
-    const pl = L.polyline(
-      [[pts[i].lat, pts[i].lng], [pts[i+1].lat, pts[i+1].lng]],
-      { color: DAY_COLORS[d], weight: 3.5, opacity: 0.7, dashArray: '7,6' }
-    );
-    dayPolylines[d].push(pl);
-  }
-});
-
-function clearAllDayLines() {
-  DAY_LIST.forEach(d => dayPolylines[d].forEach(pl => map.removeLayer(pl)));
-}
-
 document.querySelectorAll('.filter-panel button').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.filter-panel button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     const f = btn.dataset.filter;
-
-    // Stops
     STOPS.forEach(stop => {
       const m = markers[stop.slug];
       let show;
-      if (f.startsWith('day-')) {
+      if (f.indexOf('day-') === 0) {
         const day = parseInt(f.slice(4), 10);
         show = daySlugsFor(day).has(stop.slug);
       } else if (stop.category === "hotel") show = true;
@@ -1033,22 +1112,30 @@ document.querySelectorAll('.filter-panel button').forEach(btn => {
       else show = true;
       if (show) m.addTo(map); else map.removeLayer(m);
     });
-
-    // Polylines
-    clearAllDayLines();
-    polylines.forEach(({ pl }) => map.removeLayer(pl));
-    if (f === "all" || f === "A") {
-      polylines.forEach(({ pl }) => pl.addTo(map));
-    } else if (f.startsWith('day-')) {
+    // Top 5 recommended-walk polylines
+    polylines.forEach(({ pl }) => {
+      if (f === "all" || f === "A") pl.addTo(map); else map.removeLayer(pl);
+    });
+    // Gamma: per-day segment polylines
+    if (typeof segments !== 'undefined') {
+      segments.forEach(s => {
+        if (!s.polyline) return;
+        let show;
+        if (f === 'all') show = true;
+        else if (f.indexOf('day-') === 0) show = s.day === parseInt(f.slice(4), 10);
+        else show = false;
+        if (show) s.polyline.addTo(map); else map.removeLayer(s.polyline);
+      });
+    }
+    // Fit bounds when a day is filtered
+    if (f.indexOf('day-') === 0) {
       const day = parseInt(f.slice(4), 10);
-      dayPolylines[day].forEach(pl => pl.addTo(map));
-      // Auto-fit map to this day's bounds
-      const pts = dayPointsFor(day);
-      if (pts.length >= 2) {
-        map.fitBounds(pts.map(p => [p.lat, p.lng]), { padding: [80, 80] });
-      } else if (pts.length === 1) {
-        map.setView([pts[0].lat, pts[0].lng], 14);
-      }
+      const pts = ITINERARY.filter(r => r.day === day && r.slug).map(r => {
+        const s = STOPS.find(x => x.slug === r.slug);
+        return s ? [s.lat, s.lng] : null;
+      }).filter(Boolean);
+      if (pts.length >= 2) map.fitBounds(pts, { padding: [80, 80] });
+      else if (pts.length === 1) map.setView(pts[0], 14);
     }
   });
 });
@@ -1082,140 +1169,354 @@ STOPS.filter(isSuvin).forEach(stop => {
 setTimeout(() => focusStop("hotel"), 600);
 
 
-// ── Gamma: 4-day animation ─────────────────────────────────────────────────
-let _anim = null;
-function setMovingDotColor(el, color) {
-  el.style.background = color;
-  const pulse = document.createElement('div');
-  pulse.className = 'day-pulse';
-  pulse.style.color = color;
-  el.appendChild(pulse);
-  setTimeout(() => pulse.remove(), 900);
-}
-function showDayStage(day) {
-  const el = document.getElementById('dayStage');
-  el.textContent = 'Day ' + day;
-  el.style.background = DAY_COLORS[day];
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 1200);
-}
-function startAnim() {
-  if (_anim) return;
-  const playBtn = document.getElementById('playBtn');
-  const status = document.getElementById('playStatus');
-
-  // Reset to "all" view so the route reads cleanly under the dot
-  const allBtn = document.querySelector('.filter-panel button[data-filter="all"]');
-  if (!allBtn.classList.contains('active')) allBtn.click();
-
-  // Show every day's polyline as a faint hint
-  DAY_LIST.forEach(d => dayPolylines[d].forEach(pl => pl.setStyle({ opacity: 0.35 }).addTo(map)));
-
-  // Gather per-day point sequences (skip empty days entirely)
-  const days = DAY_LIST.map(d => ({ day: d, pts: dayPointsFor(d) })).filter(x => x.pts.length >= 1);
-  if (!days.length) { status.textContent = '데이터 없음'; return; }
-
-  // Moving dot at day 1 start — plain HTML so inline style always survives
-  const startPt = days[0].pts[0];
-  function dotIconFor(color) {
-    return L.divIcon({
-      className: 'moving-wrap',
-      html: '<div class="moving-dot" style="background:' + color + '"></div>',
-      iconSize: [28, 28], iconAnchor: [14, 14]
-    });
-  }
-  const dotMarker = L.marker([startPt.lat, startPt.lng], {
-    icon: dotIconFor(DAY_COLORS[days[0].day]),
-    zIndexOffset: 2000, interactive: false
-  }).addTo(map);
-
-  const DAY_MS = 5000;         // each day takes ~5s of air-time
-  const DAY_GAP_MS = 600;      // pause between days
-  const FIRST_DWELL_MS = 350;  // hold on the first point briefly
-
-  playBtn.classList.add('playing');
-  playBtn.textContent = '■';
-  playBtn.setAttribute('aria-label', 'Stop');
-
-  let cancelled = false;
-  _anim = {
-    cancel() {
-      cancelled = true;
-      map.removeLayer(dotMarker);
-      DAY_LIST.forEach(d => dayPolylines[d].forEach(pl => pl.setStyle({ opacity: 0.7 })));
-      DAY_LIST.forEach(d => dayPolylines[d].forEach(pl => map.removeLayer(pl)));
-      playBtn.classList.remove('playing');
-      playBtn.textContent = '▶';
-      playBtn.setAttribute('aria-label', 'Play itinerary');
-      status.textContent = '4-day animation';
-      _anim = null;
-    }
-  };
-
-  function setDotColor(color) {
-    // Recreate the icon (most reliable — survives Leaflet re-renders).
-    dotMarker.setIcon(dotIconFor(color));
-    // Add a brief pulse on the freshly rendered element
-    requestAnimationFrame(() => {
-      const live = document.querySelector('.moving-wrap .moving-dot');
-      if (live) setMovingDotColor(live, color);
-    });
-  }
-
-  function tween(from, to, ms) {
-    return new Promise(resolve => {
-      const t0 = performance.now();
-      function step(now) {
-        if (cancelled) { resolve(); return; }
-        const t = Math.min(1, (now - t0) / ms);
-        const k = t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t;   // smooth ease-in-out
-        const lat = from.lat + (to.lat - from.lat) * k;
-        const lng = from.lng + (to.lng - from.lng) * k;
-        dotMarker.setLatLng([lat, lng]);
-        if (t < 1) requestAnimationFrame(step);
-        else resolve();
-      }
-      requestAnimationFrame(step);
-    });
-  }
-
-  (async () => {
-    for (let di = 0; di < days.length; di++) {
-      if (cancelled) break;
-      const { day, pts } = days[di];
-      showDayStage(day);
-      setDotColor(DAY_COLORS[day]);
-      // Teleport dot to this day's first point (between-day jump is intentional)
-      dotMarker.setLatLng([pts[0].lat, pts[0].lng]);
-      // Fit to this day's bounds for clarity
-      if (pts.length >= 2) {
-        map.flyToBounds(pts.map(p => [p.lat, p.lng]), { padding: [80, 80], duration: 0.5 });
-      } else {
-        map.flyTo([pts[0].lat, pts[0].lng], 14, { duration: 0.5 });
-      }
-      await new Promise(r => setTimeout(r, FIRST_DWELL_MS));
-      // Walk through hops
-      const hops = Math.max(1, pts.length - 1);
-      const hopMs = DAY_MS / hops;
-      for (let i = 0; i < pts.length - 1; i++) {
-        if (cancelled) break;
-        status.textContent = 'Day ' + day + ' · ' + pts[i].label + ' → ' + pts[i+1].label;
-        await tween(pts[i], pts[i+1], hopMs);
-      }
-      if (!cancelled) await new Promise(r => setTimeout(r, DAY_GAP_MS));
-    }
-    if (!cancelled) {
-      status.textContent = '여행 끝 🎉';
-      setTimeout(() => { if (_anim) _anim.cancel(); }, 1800);
-    }
-  })();
-}
-
-document.getElementById('playBtn').addEventListener('click', () => {
-  if (_anim) _anim.cancel(); else startAnim();
+// ══════════════════════════════════════════
+//  Gamma animation engine — Fukuoka-style
+// ══════════════════════════════════════════
+const ROUTE = [];
+ITINERARY.forEach((r, i) => {
+  if (!r.slug) return;
+  const stop = STOPS.find(s => s.slug === r.slug);
+  if (!stop) return;
+  ROUTE.push({
+    idx: ROUTE.length,
+    slug: r.slug,
+    nameKr: r.nameKr || stop.nameKr || r.slug,
+    lat: stop.lat, lng: stop.lng,
+    icon: stop.icon || '🔹',
+    day: r.day,
+    startTime: r.startTime,
+    endTime: r.endTime,
+    travelMode: r.travelMode,
+    travelMin: r.travelMin || 5,
+    notes: r.notes || ''
+  });
 });
 
-// Mirror stop-card visibility on <body> so .play-bar can lift via CSS
+const segments = [];
+for (let i = 0; i < ROUTE.length - 1; i++) {
+  const from = ROUTE[i], to = ROUTE[i + 1];
+  // Transport mode used for from→to is stored on `to` (travelFromPrev/travelMode in CSV)
+  const transport = to.travelMode || 'walk';
+  segments.push({
+    fromStop: i,
+    toStop: i + 1,
+    points: [[from.lat, from.lng], [to.lat, to.lng]],
+    transport,
+    day: from.day,
+    nextDay: to.day,
+    travelMin: to.travelMin || 5,
+    polyline: null,
+  });
+}
+
+// Draw segment polylines (faint by default)
+segments.forEach(seg => {
+  seg.polyline = L.polyline(seg.points, {
+    color: DAY_COLORS[seg.day],
+    weight: 3.2,
+    opacity: 0.22,
+    dashArray: (seg.transport === 'walk') ? '6,8' : '12,6'
+  }).addTo(map);
+});
+
+// Moving marker
+function makeMovingIcon(emoji) {
+  return L.divIcon({
+    className: 'moving-wrap',
+    html: '<div class="moving-marker">' + emoji + '</div>',
+    iconSize: [34, 34], iconAnchor: [17, 17]
+  });
+}
+const movingMarker = ROUTE.length
+  ? L.marker([ROUTE[0].lat, ROUTE[0].lng], {
+      icon: makeMovingIcon(transportIcon(ROUTE[1] ? ROUTE[1].travelMode : null) || ROUTE[0].icon),
+      zIndexOffset: 2000, interactive: false
+    }).addTo(map)
+  : null;
+if (movingMarker) {
+  // Hide initially until anim starts
+  movingMarker.getElement().style.opacity = '0';
+}
+
+// Helper: show the now-playing badge
+function showNowPlaying(stopIdx) {
+  const r = ROUTE[stopIdx]; if (!r) return;
+  const el = document.getElementById('nowPlaying');
+  const time = r.startTime || r.endTime || '';
+  el.textContent = 'Day ' + r.day + ' · ' + r.nameKr + (time ? ' · ' + time : '');
+  el.style.background = 'rgba(44,44,44,0.92)';
+  el.style.borderLeft = '4px solid ' + DAY_COLORS[r.day];
+  el.classList.add('show');
+}
+function hideNowPlaying() { document.getElementById('nowPlaying').classList.remove('show'); }
+
+const anim = {
+  currentSegment: 0,
+  progress: 0,
+  isPlaying: false,
+  speed: 1,
+  lastTimestamp: null,
+  transitioning: false,
+  trailTimers: [],
+  hasStarted: false,
+
+  play() {
+    if (this.transitioning || !segments.length) return;
+    if (!this.hasStarted) {
+      this.hasStarted = true;
+      this._showDayTransition(ROUTE[0].day, () => { this._enterSegment(0); this._startTicking(); });
+      return;
+    }
+    this._startTicking();
+  },
+  _startTicking() {
+    if (this.currentSegment >= segments.length) {
+      // Restart from beginning
+      this.currentSegment = 0; this.progress = 0;
+      this._enterSegment(0);
+    }
+    this.isPlaying = true;
+    this.lastTimestamp = null;
+    document.getElementById('playBtn').textContent = '⏸';
+    document.getElementById('playBtn').setAttribute('aria-label', 'Pause');
+    if (movingMarker) movingMarker.getElement().style.opacity = '1';
+    requestAnimationFrame(t => this.tick(t));
+  },
+  pause() {
+    this.isPlaying = false;
+    document.getElementById('playBtn').textContent = '▶';
+    document.getElementById('playBtn').setAttribute('aria-label', 'Play');
+  },
+  toggle() { this.isPlaying ? this.pause() : this.play(); },
+  setSpeed(s) {
+    this.speed = s;
+    document.querySelectorAll('.speed-btn').forEach(b =>
+      b.classList.toggle('active', Number(b.dataset.speed) === s));
+  },
+  _segmentDuration(idx) {
+    const seg = segments[idx]; if (!seg) return 1200;
+    // travelMin → ms, with mode-specific min for visibility
+    let base = (seg.travelMin || 5) * 90;
+    if (seg.transport === 'walk') base = Math.max(base, 700);
+    else if (seg.transport.indexOf('metro') !== -1) base = Math.max(base, 1200);
+    else if (seg.transport.indexOf('bus') !== -1) base = Math.max(base, 1700);
+    else if (seg.transport.indexOf('taxi') !== -1 || seg.transport.indexOf('robotaxi') !== -1) base = Math.max(base, 1400);
+    else if (seg.transport.indexOf('ferry') !== -1) base = Math.max(base, 1400);
+    else base = Math.max(base, 900);
+    return base;
+  },
+  tick(timestamp) {
+    if (!this.isPlaying) return;
+    if (!this.lastTimestamp) this.lastTimestamp = timestamp;
+    const delta = timestamp - this.lastTimestamp;
+    this.lastTimestamp = timestamp;
+    const seg = segments[this.currentSegment];
+    if (!seg) { this.pause(); return; }
+    const duration = this._segmentDuration(this.currentSegment);
+    this.progress += (delta * this.speed) / duration;
+    if (this.progress >= 1) {
+      this.progress = 1;
+      this._updatePosition();
+      this._onSegmentComplete();
+      return;
+    }
+    this._updatePosition();
+    this._updateRouteVisuals();
+    this._updateProgressBar();
+    requestAnimationFrame(t => this.tick(t));
+  },
+  _interpolate(segIdx, t) {
+    const seg = segments[segIdx]; if (!seg) return null;
+    const [p1, p2] = seg.points;
+    t = Math.max(0, Math.min(1, t));
+    // Ease in/out for smoother arrival
+    const k = t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t;
+    return [p1[0] + (p2[0] - p1[0]) * k, p1[1] + (p2[1] - p1[1]) * k];
+  },
+  _updatePosition() {
+    const pos = this._interpolate(this.currentSegment, this.progress);
+    if (pos && movingMarker) {
+      movingMarker.setLatLng(pos);
+      this._spawnTrail(pos);
+    }
+  },
+  _spawnTrail(pos) {
+    const seg = segments[this.currentSegment]; if (!seg) return;
+    const dot = L.circleMarker(pos, {
+      radius: 3, fillColor: DAY_COLORS[seg.day], fillOpacity: 0.55,
+      stroke: false, interactive: false
+    }).addTo(map);
+    const t = setTimeout(() => map.removeLayer(dot), 700);
+    this.trailTimers.push(t);
+    while (this.trailTimers.length > 60) clearTimeout(this.trailTimers.shift());
+  },
+  _onSegmentComplete() {
+    const seg = segments[this.currentSegment];
+    if (seg && seg.polyline) seg.polyline.setStyle({ opacity: 0.7 });
+    const nextIdx = this.currentSegment + 1;
+    if (nextIdx >= segments.length) {
+      this.pause();
+      showNowPlaying(ROUTE.length - 1);
+      this._updateProgressBar();
+      return;
+    }
+    const curDay = segments[this.currentSegment].day;
+    const nextDay = segments[nextIdx].day;
+    if (curDay !== nextDay) {
+      this.pause();
+      this._dwell(seg.toStop, () => {
+        this.currentSegment = nextIdx; this.progress = 0;
+        this._showDayTransition(nextDay, () => { this._enterSegment(nextIdx); this._startTicking(); });
+      });
+      return;
+    }
+    this._dwell(seg.toStop, () => {
+      this.currentSegment = nextIdx; this.progress = 0;
+      this._enterSegment(nextIdx); this._startTicking();
+    });
+  },
+  _dwell(arrivedStopIdx, callback) {
+    const ms = 900 / this.speed;
+    this.pause();
+    showNowPlaying(arrivedStopIdx);
+    setTimeout(callback, ms);
+  },
+  _enterSegment(idx) {
+    const seg = segments[idx]; if (!seg) return;
+    // Moving marker emoji = transport for THIS hop
+    const live = document.querySelector('.moving-wrap .moving-marker');
+    if (live) live.textContent = transportIcon(seg.transport);
+    showNowPlaying(seg.fromStop);
+    this._updateRouteVisuals();
+    this._updateProgressBar();
+    // Camera flyTo with adaptive zoom
+    const dist = map.distance(seg.points[0], seg.points[1]);
+    if (dist > 14000) {
+      map.flyToBounds(L.latLngBounds(seg.points).pad(0.4), { duration: 0.9 });
+    } else if (dist < 1200) {
+      map.flyTo(seg.points[0], 15, { duration: 0.7 });
+    } else {
+      map.flyToBounds(L.latLngBounds(seg.points).pad(0.5), { duration: 0.75 });
+    }
+  },
+  _updateRouteVisuals() {
+    segments.forEach((s, i) => {
+      if (!s.polyline) return;
+      if (i < this.currentSegment) s.polyline.setStyle({ opacity: 0.7 });
+      else if (i === this.currentSegment) s.polyline.setStyle({ opacity: 0.95 });
+      else s.polyline.setStyle({ opacity: 0.22 });
+    });
+  },
+  _updateProgressBar() {
+    const total = segments.length || 1;
+    const pct = ((this.currentSegment + this.progress) / total) * 100;
+    const fill = document.getElementById('progressFill');
+    fill.style.width = Math.min(100, pct) + '%';
+    const seg = segments[this.currentSegment] || segments[segments.length - 1];
+    if (seg) {
+      fill.style.background = DAY_COLORS[seg.day];
+      fill.style.color = DAY_COLORS[seg.day];
+    }
+  },
+  _showDayTransition(day, callback) {
+    this.transitioning = true;
+    const overlay = document.getElementById('dayOverlay');
+    document.getElementById('overlayNum').textContent = 'DAY ' + day;
+    document.getElementById('overlayNum').style.color = DAY_COLORS[day];
+    document.getElementById('overlayDate').textContent = (DAY_INFO[day] && DAY_INFO[day].date) || '';
+    document.getElementById('overlaySub').textContent = (DAY_INFO[day] && DAY_INFO[day].sub) || '';
+    overlay.classList.add('show');
+    // Fly to first stop of new day
+    const first = ROUTE.find(r => r.day === day);
+    if (first) map.flyTo([first.lat, first.lng], 13, { duration: 1.2 });
+    setTimeout(() => {
+      overlay.classList.remove('show');
+      setTimeout(() => { this.transitioning = false; callback && callback(); }, 450);
+    }, 1700);
+  },
+  nextStop() {
+    if (this.transitioning) return;
+    const next = this.currentSegment + 1;
+    if (next >= segments.length) return;
+    if (segments[this.currentSegment] && segments[this.currentSegment].polyline)
+      segments[this.currentSegment].polyline.setStyle({ opacity: 0.7 });
+    const wasPlaying = this.isPlaying;
+    this.pause();
+    const curDay = segments[this.currentSegment].day;
+    const nextDay = segments[next].day;
+    this.currentSegment = next; this.progress = 0;
+    const after = () => {
+      this._enterSegment(next);
+      // Snap dot to start of new segment
+      if (movingMarker) movingMarker.setLatLng(segments[next].points[0]);
+      if (wasPlaying) this._startTicking();
+    };
+    if (curDay !== nextDay) this._showDayTransition(nextDay, after);
+    else after();
+  },
+  prevStop() {
+    if (this.transitioning) return;
+    if (this.currentSegment <= 0) return;
+    const prev = this.currentSegment - 1;
+    if (segments[this.currentSegment] && segments[this.currentSegment].polyline)
+      segments[this.currentSegment].polyline.setStyle({ opacity: 0.22 });
+    const wasPlaying = this.isPlaying;
+    this.pause();
+    const curDay = segments[this.currentSegment].day;
+    const prevDay = segments[prev].day;
+    this.currentSegment = prev; this.progress = 0;
+    const after = () => {
+      this._enterSegment(prev);
+      if (movingMarker) movingMarker.setLatLng(segments[prev].points[0]);
+      if (wasPlaying) this._startTicking();
+    };
+    if (curDay !== prevDay) this._showDayTransition(prevDay, after);
+    else after();
+  },
+  seekTo(pct) {
+    if (this.transitioning || !segments.length) return;
+    const total = segments.length;
+    const pos = (pct / 100) * total;
+    const segIdx = Math.min(Math.floor(pos), total - 1);
+    const prog = pos - segIdx;
+    const wasPlaying = this.isPlaying;
+    this.pause();
+    segments.forEach((s, i) => {
+      if (!s.polyline) return;
+      s.polyline.setStyle({ opacity: i < segIdx ? 0.7 : i === segIdx ? 0.95 : 0.22 });
+    });
+    this.currentSegment = segIdx;
+    this.progress = prog;
+    this.hasStarted = true;
+    this._enterSegment(segIdx);
+    this._updatePosition();
+    this._updateProgressBar();
+    if (movingMarker) movingMarker.getElement().style.opacity = '1';
+    if (wasPlaying) setTimeout(() => this._startTicking(), 100);
+  },
+};
+
+// Bindings
+document.getElementById('playBtn').addEventListener('click', () => anim.toggle());
+document.getElementById('nextBtn').addEventListener('click', () => anim.nextStop());
+document.getElementById('prevBtn').addEventListener('click', () => anim.prevStop());
+document.querySelectorAll('.speed-btn').forEach(btn => {
+  btn.addEventListener('click', () => anim.setSpeed(Number(btn.dataset.speed)));
+});
+document.getElementById('progressWrap').addEventListener('click', function(e) {
+  const rect = this.getBoundingClientRect();
+  const pct = ((e.clientX - rect.left) / rect.width) * 100;
+  anim.seekTo(pct);
+});
+document.addEventListener('keydown', e => {
+  // Don't intercept in inputs
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+  if (e.code === 'Space') { e.preventDefault(); anim.toggle(); }
+  else if (e.code === 'ArrowRight') anim.nextStop();
+  else if (e.code === 'ArrowLeft') anim.prevStop();
+});
+
+// Mirror stop-card visibility so control-bar fades when card is open
 (function watchCard() {
   const card = document.getElementById('stopCard');
   if (!card) return;
@@ -1228,12 +1529,28 @@ document.getElementById('playBtn').addEventListener('click', () => {
 </script>
 
 
-<!-- Gamma: play bar + day stage -->
-<div class="day-stage glass" id="dayStage"></div>
-<div class="play-bar glass">
-  <button class="play-btn" id="playBtn" aria-label="Play itinerary">▶</button>
-  <span class="play-status" id="playStatus">4-day animation</span>
+<!-- Gamma: control bar -->
+<div class="control-bar glass" id="controlBar">
+  <button class="ctrl-btn" id="prevBtn" aria-label="Previous">⏮</button>
+  <button class="ctrl-btn play-btn" id="playBtn" aria-label="Play">▶</button>
+  <button class="ctrl-btn" id="nextBtn" aria-label="Next">⏭</button>
+  <div class="progress-wrap" id="progressWrap"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <button class="speed-btn active" data-speed="1">1x</button>
+  <button class="speed-btn" data-speed="2">2x</button>
+  <button class="speed-btn" data-speed="4">4x</button>
 </div>
+
+<!-- Gamma: day overlay -->
+<div class="day-overlay" id="dayOverlay">
+  <div class="day-overlay-content">
+    <span class="day-overlay-num" id="overlayNum">DAY 1</span>
+    <span class="day-overlay-date" id="overlayDate"></span>
+    <span class="day-overlay-sub" id="overlaySub"></span>
+  </div>
+</div>
+
+<!-- Gamma: now-playing -->
+<div class="now-playing" id="nowPlaying"></div>
 
 </body>
 </html>
